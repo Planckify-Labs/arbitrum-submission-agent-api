@@ -34,19 +34,19 @@
  * `balance_display`.
  */
 export type GetBalanceResult = {
-  address: string;
-  chain_id: number;
+  address: string
+  chain_id: number
   /** Base-10 string (wei). See §8. Used only for exact arithmetic. */
-  balance_wei: string;
+  balance_wei: string
   /** Human-readable balance already formatted to `decimals`. Agent SHOULD use this for user-facing reporting. */
-  balance_display: string;
+  balance_display: string
   /** Decimals the `balance_display` was scaled with. */
-  decimals: number;
+  decimals: number
   /** Native currency ticker (e.g. "ETH", "MATIC"). */
-  symbol: string;
+  symbol: string
   /** Native currency full name (e.g. "Ethereum", "Matic Token"). */
-  name: string;
-};
+  name: string
+}
 
 /**
  * `get_transaction`
@@ -61,45 +61,45 @@ export type GetBalanceResult = {
  */
 export type GetTransactionResult =
   | {
-      chain_id: number;
-      status: 'success' | 'reverted';
+      chain_id: number
+      status: 'success' | 'reverted'
       /** Base-10 string. See §8. */
-      block_number: string;
+      block_number: string
       /** Base-10 string (gas units). See §8. */
-      gas_used: string;
+      gas_used: string
       /** Base-10 string (wei). Gas price actually paid. */
-      effective_gas_price_wei: string;
+      effective_gas_price_wei: string
       /** Base-10 string (wei). Total fee = gas_used × effective_gas_price. */
-      fee_wei: string;
+      fee_wei: string
       /** Human-readable total fee, already scaled to `decimals`. */
-      fee_display: string;
-      decimals: number;
+      fee_display: string
+      decimals: number
       /** Native currency ticker for display. */
-      symbol: string;
-      from: string;
-      to: string | null;
+      symbol: string
+      from: string
+      to: string | null
     }
   | {
-      chain_id: number;
-      pending: true;
-      from: string;
-      to: string | null;
+      chain_id: number
+      pending: true
+      from: string
+      to: string | null
       /** Base-10 string (wei). See §8. */
-      value_wei: string;
+      value_wei: string
       /** Human-readable transfer value, already scaled to `decimals`. */
-      value_display: string;
-      decimals: number;
+      value_display: string
+      decimals: number
       /** Native currency ticker for display. */
-      symbol: string;
-    };
+      symbol: string
+    }
 
 /**
  * `get_wallet_address`
  * The currently-active wallet address on the mobile client.
  */
 export type GetWalletAddressResult = {
-  address: string;
-};
+  address: string
+}
 
 /**
  * `get_supported_chains`
@@ -107,14 +107,14 @@ export type GetWalletAddressResult = {
  */
 export type GetSupportedChainsResult = {
   chains: Array<{
-    chain_id: number;
-    name: string;
-    native_symbol: string;
-    native_decimals: number;
-    rpc_url: string;
-    block_explorer: string | null;
-  }>;
-};
+    chain_id: number
+    name: string
+    native_symbol: string
+    native_decimals: number
+    rpc_url: string
+    block_explorer: string | null
+  }>
+}
 
 /**
  * `estimate_gas`
@@ -135,20 +135,20 @@ export type GetSupportedChainsResult = {
  *  - `symbol` / `decimals`: native currency metadata for display.
  */
 export type EstimateGasResult = {
-  chain_id: number;
+  chain_id: number
   /** Legacy alias for `gas_units`. Value is gas units, NOT wei. */
-  gas_wei: string;
+  gas_wei: string
   /** Gas units the call will consume. */
-  gas_units: string;
+  gas_units: string
   /** Base-10 string (wei). Gas price at the moment of the estimate. Absent if unavailable. */
-  gas_price_wei?: string;
+  gas_price_wei?: string
   /** Base-10 string (wei). Total fee. Absent if `gas_price_wei` is unavailable. */
-  fee_wei?: string;
+  fee_wei?: string
   /** Human-readable total fee. Agent MUST use this for user-facing output. */
-  fee_display?: string;
-  decimals: number;
-  symbol: string;
-};
+  fee_display?: string
+  decimals: number
+  symbol: string
+}
 
 /**
  * `read_contract`
@@ -159,11 +159,11 @@ export type EstimateGasResult = {
  * sending it across the wire.
  */
 export type ReadContractResult = {
-  chain_id: number;
-  contract_address: string;
-  function_name: string;
-  result: unknown;
-};
+  chain_id: number
+  contract_address: string
+  function_name: string
+  result: unknown
+}
 
 /**
  * `get_wallet_tokens`
@@ -183,22 +183,22 @@ export type ReadContractResult = {
  *    never derived from the symbol alone.
  */
 export type GetWalletTokensResult = {
-  chain_id: number;
+  chain_id: number
   tokens: Array<{
-    symbol: string;
-    name: string;
+    symbol: string
+    name: string
     /** EVM address. Zero address for the chain's native currency. */
-    address: `0x${string}`;
-    decimals: number;
-    is_native: boolean;
-    is_stable_coin: boolean;
-    logo_url?: string;
+    address: `0x${string}`
+    decimals: number
+    is_native: boolean
+    is_stable_coin: boolean
+    logo_url?: string
     /** Base-10 string (wei). Present iff `include_balance` was true. See §8. */
-    balance_wei?: string;
+    balance_wei?: string
     /** Formatted to `decimals`. Present iff `balance_wei` is present. */
-    balance_display?: string;
-  }>;
-};
+    balance_display?: string
+  }>
+}
 
 // ─── Points & redemption (protocol v1.1 §12, §13) ─────────────────────────
 //
@@ -209,120 +209,124 @@ export type GetWalletTokensResult = {
 /** `get_redemption_categories` — list of product categories. */
 export type GetRedemptionCategoriesResult = {
   categories: Array<{
-    id: string;
-    name: string;
-    description: string | null;
-    image_url: string | null;
-  }>;
-};
+    id: string
+    name: string
+    description: string | null
+    image_url: string | null
+  }>
+}
 
 /** `get_redemption_catalog` — catalog grouped by category. */
 export type GetRedemptionCatalogResult = {
   groups: Array<{
-    category: { id: string; name: string };
+    category: { id: string; name: string }
     products: Array<{
-      id: string;
-      name: string;
-      description: string;
-      image_url: string | null;
-      code: string;
+      id: string
+      name: string
+      description: string
+      image_url: string | null
+      code: string
       /** null when no dynamic input fields are required. */
-      input_type: string | null;
-    }>;
-  }>;
-};
+      input_type: string | null
+    }>
+  }>
+}
 
 /** `search_redemption_catalog` — flat list of matching products. */
 export type SearchRedemptionCatalogResult = {
   products: Array<{
-    id: string;
-    name: string;
-    description: string;
-    image_url: string | null;
-    code: string;
-    category_id: string;
-    input_type: string | null;
-  }>;
-};
+    id: string
+    name: string
+    description: string
+    image_url: string | null
+    code: string
+    category_id: string
+    /** Inline category (name + id) so the UI can group flat results. */
+    category: { id: string; name: string } | null
+    /** Lowest active points cost ("from X points"); null if unpriced. */
+    starting_points: string | null
+    input_type: string | null
+  }>
+}
 
 /** `get_product_details` — full product detail with variants + prices. */
 export type GetProductDetailsResult = {
-  id: string;
-  name: string;
-  description: string;
-  image_url: string | null;
-  code: string;
+  id: string
+  name: string
+  description: string
+  image_url: string | null
+  code: string
   /** Non-null → agent must call get_product_input_fields next. */
-  input_type: string | null;
-  category: { id: string; name: string };
+  input_type: string | null
+  category: { id: string; name: string }
   variants: Array<{
     /** productVariantId — needed for execute_redemption. */
-    id: string;
-    name: string;
-    description: string;
-    is_voucher: boolean;
+    id: string
+    name: string
+    description: string
+    is_voucher: boolean
     prices: Array<{
       /** productPriceId — needed for execute_redemption. */
-      id: string;
+      id: string
       /** Price in points (the `sellPrice` field). */
-      sell_price: string;
-      currency: string;
-      is_active: boolean;
-    }>;
-  }>;
-};
+      sell_price: string
+      currency: string
+      is_active: boolean
+    }>
+  }>
+}
 
 /** `get_product_input_fields` — dynamic form fields for redemption. */
 export type GetProductInputFieldsResult = {
-  product_id: string;
-  product_name: string;
+  product_id: string
+  product_name: string
   fields: Array<{
-    key: string;
-    type: string;
-    label: string;
-    options?: string[];
-  }>;
-};
+    key: string
+    type: string
+    label: string
+    options?: string[]
+  }>
+}
 
 /** `get_points_price` — public token ↔ points conversion rate. */
 export type GetPointsPriceResult = {
-  point_price: string;
-  currency: string;
+  point_price: string
+  currency: string
   token: {
-    id: string;
-    symbol: string;
-    decimals: number;
-    price_in_currency: string;
-  };
-  points_per_token: string;
-  token_per_point: string;
-  minimum_points: number;
-  minimum_token_amount: string;
-  updated_at: string;
-};
+    id: string
+    symbol: string
+    decimals: number
+    price_in_currency: string
+  }
+  points_per_token: string
+  token_per_point: string
+  minimum_points: number
+  minimum_token_amount: string
+  updated_at: string
+}
 
 /** `get_points_balance` — current points balance as a decimal string. */
 export type GetPointsBalanceResult = {
-  balance: string;
-};
+  balance: string
+}
 
 /** `get_points_history` — cursor-paginated points transactions. */
 export type GetPointsHistoryResult = {
   transactions: Array<{
-    id: string;
-    type: 'DEPOSIT' | 'SPEND' | 'REFUND' | 'BONUS';
-    amount: string;
-    balance_before: string;
-    balance_after: string;
-    status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'FAILED';
-    token_amount?: string;
-    token_symbol?: string;
-    tx_hash?: string;
-    created_at: string;
-  }>;
-  next_cursor: string | null;
-  has_more: boolean;
-};
+    id: string
+    type: 'DEPOSIT' | 'SPEND' | 'REFUND' | 'BONUS'
+    amount: string
+    balance_before: string
+    balance_after: string
+    status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'FAILED'
+    token_amount?: string
+    token_symbol?: string
+    tx_hash?: string
+    created_at: string
+  }>
+  next_cursor: string | null
+  has_more: boolean
+}
 
 /**
  * `deposit_points` — terminal result of a token → points deposit.
@@ -330,13 +334,13 @@ export type GetPointsHistoryResult = {
  * status polling); the agent only sees the final state.
  */
 export type DepositPointsResult = {
-  deposit_id: string;
-  status: 'COMPLETED' | 'FAILED';
+  deposit_id: string
+  status: 'COMPLETED' | 'FAILED'
   /** Actual points credited (may differ slightly from expected). */
-  points_received: string;
+  points_received: string
   /** On-chain transaction hash of the deposit transfer. */
-  tx_hash: string;
-};
+  tx_hash: string
+}
 
 /**
  * `execute_redemption` — terminal result of spending points on a product.
@@ -344,42 +348,42 @@ export type DepositPointsResult = {
  * `status === "COMPLETED"` if the vendor has not confirmed delivery yet.
  */
 export type ExecuteRedemptionResult = {
-  redemption_id: string;
-  status: 'COMPLETED' | 'PROCESSING' | 'FAILED' | 'REFUNDED';
-  points_spent: string;
-  voucher_code?: string | null;
-  vendor_ref_id?: string | null;
-};
+  redemption_id: string
+  status: 'COMPLETED' | 'PROCESSING' | 'FAILED' | 'REFUNDED'
+  points_spent: string
+  voucher_code?: string | null
+  vendor_ref_id?: string | null
+}
 
 /** `get_redemption_status` — poll a single redemption by id. */
 export type GetRedemptionStatusResult = {
-  redemption_id: string;
-  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'REFUNDED';
-  points_spent: string;
-  vendor_ref_id: string | null;
-  created_at: string;
-};
+  redemption_id: string
+  status: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'REFUNDED'
+  points_spent: string
+  vendor_ref_id: string | null
+  created_at: string
+}
 
 /** `get_redemption_history` — cursor-paginated past redemptions. */
 export type GetRedemptionHistoryResult = {
   redemptions: Array<{
-    id: string;
-    status: string;
-    points_spent: string;
-    created_at: string;
+    id: string
+    status: string
+    points_spent: string
+    created_at: string
     product: {
-      id: string;
-      name: string;
-      is_voucher: boolean;
-      variant: { id: string; name: string };
-      price: { amount: number; currency: string };
-    };
+      id: string
+      name: string
+      is_voucher: boolean
+      variant: { id: string; name: string }
+      price: { amount: number; currency: string }
+    }
     /** Present on detail fetch, not history. */
-    voucher_code?: string | null;
-  }>;
-  next_cursor: string | null;
-  has_more: boolean;
-};
+    voucher_code?: string | null
+  }>
+  next_cursor: string | null
+  has_more: boolean
+}
 
 // ─── Sui native shapes ────────────────────────────────────────────────────
 //
@@ -404,28 +408,28 @@ export type GetRedemptionHistoryResult = {
  */
 export type GetSuiBalanceResult = {
   groups: Array<{
-    namespace: 'sui';
+    namespace: 'sui'
     /** Sui network identifier ("mainnet", "testnet", "devnet"). */
-    chain_id: string;
+    chain_id: string
     /** Display label, e.g. "Sui Mainnet". */
-    chain_label: string;
-    chain_symbol: 'SUI';
+    chain_label: string
+    chain_symbol: 'SUI'
     tokens: Array<{
-      symbol: 'SUI';
-      name: 'Sui';
+      symbol: 'SUI'
+      name: 'Sui'
       /** Empty string for native — matches EVM/Solana convention. */
-      address: '';
+      address: ''
       /** Always 9 for SUI. */
-      decimals: 9;
-      is_native: true;
-      is_stable_coin: false;
+      decimals: 9
+      is_native: true
+      is_stable_coin: false
       /** Base-10 string (MIST). Used only for exact arithmetic. */
-      balance_raw: string;
+      balance_raw: string
       /** Human-readable balance already formatted to 9 decimals. */
-      balance_display: string;
-    }>;
-  }>;
-};
+      balance_display: string
+    }>
+  }>
+}
 
 /**
  * `get_wallet_sui_coins`
@@ -450,29 +454,29 @@ export type GetSuiBalanceResult = {
  */
 export type GetSuiWalletCoinsResult = {
   groups: Array<{
-    namespace: 'sui';
+    namespace: 'sui'
     /** Sui network identifier (e.g. "mainnet", "testnet", "devnet"). */
-    chain_id: string;
+    chain_id: string
     /** Display label, e.g. "Sui Mainnet". */
-    chain_label: string;
-    chain_symbol: 'SUI';
+    chain_label: string
+    chain_symbol: 'SUI'
     tokens: Array<{
-      symbol: string;
-      name?: string;
+      symbol: string
+      name?: string
       /** Move struct path `0x{addr}::{module}::{Name}` — Sui's coin type. */
-      address: string;
-      decimals: number;
-      is_native: boolean;
-      is_stable_coin: boolean;
-      logo_url?: string;
-      pegged_currency?: string;
+      address: string
+      decimals: number
+      is_native: boolean
+      is_stable_coin: boolean
+      logo_url?: string
+      pegged_currency?: string
       /** Base-10 string (coin minor units). Present iff `include_balance` was true. */
-      balance_raw?: string;
+      balance_raw?: string
       /** Formatted to `decimals`. Present iff `balance_raw` is present. */
-      balance_display?: string;
-    }>;
-  }>;
-};
+      balance_display?: string
+    }>
+  }>
+}
 
 /**
  * `send_sui` — terminal result of a native SUI transfer.
@@ -481,14 +485,14 @@ export type GetSuiWalletCoinsResult = {
  */
 export type SendSuiResult = {
   /** Base58 transaction digest. */
-  digest: string;
-  to: string;
-  network: string;
+  digest: string
+  to: string
+  network: string
   /** Base-10 string (MIST). */
-  amount_mist: string;
+  amount_mist: string
   /** Human-readable amount as supplied by the agent. */
-  amount_sui: string;
-};
+  amount_sui: string
+}
 
 /**
  * `send_sui_coin` — terminal result of a non-native Coin<T> transfer.
@@ -497,17 +501,17 @@ export type SendSuiResult = {
  */
 export type SendSuiCoinResult = {
   /** Base58 transaction digest. */
-  digest: string;
-  to: string;
+  digest: string
+  to: string
   /** Move struct path `0x{addr}::{module}::{Name}`. */
-  coin_type: string;
-  network: string;
+  coin_type: string
+  network: string
   /** Base-10 string (coin minor units). */
-  amount_raw: string;
+  amount_raw: string
   /** Human-readable amount as supplied by the agent. */
-  token_amount: string;
-  decimals: number;
-};
+  token_amount: string
+  decimals: number
+}
 
 /**
  * `request_authentication` — user-facing login flow (§13).
@@ -520,9 +524,9 @@ export type SendSuiCoinResult = {
 export type RequestAuthenticationResult =
   | { success: true }
   | {
-      success: false;
-      error: 'user_cancelled' | 'network_error' | 'wallet_mismatch' | string;
-    };
+      success: false
+      error: 'user_cancelled' | 'network_error' | 'wallet_mismatch' | string
+    }
 
 /**
  * `defi_intent_preview` — compiled plan + guardian verdict (read; never
@@ -532,17 +536,17 @@ export type RequestAuthenticationResult =
  */
 export type DefiIntentPreviewResult = {
   /** Opaque; pass to defi_intent_execute. */
-  intent_id: string;
+  intent_id: string
   /** Plain-language, hand-built (no raw data). */
-  human_summary: string;
+  human_summary: string
   /** Decimal string, when the venue exposes one (supply). */
-  apy?: string;
+  apy?: string
   /** Decoded PTB commands — the "what it does on-chain" list. */
   decoded: Array<{
-    kind: string;
-    module?: string;
-    function?: string;
-  }>;
+    kind: string
+    module?: string
+    function?: string
+  }>
   risk_flags: Array<{
     // 'effect.mismatch' is computed from the dry-run's real balance changes
     // (dryRunTransactionBlock effects), not the venue quote — the why-Sui
@@ -551,28 +555,28 @@ export type DefiIntentPreviewResult = {
       | 'slippage.high'
       | 'oracle.stale'
       | 'concentration.high'
-      | 'effect.mismatch';
-    severity: 'info' | 'warn' | 'block';
-    title: string;
-    detail: string;
-  }>;
+      | 'effect.mismatch'
+    severity: 'info' | 'warn' | 'block'
+    title: string
+    detail: string
+  }>
   /** true ⇒ the agent must NOT call defi_intent_execute. */
-  blocked: boolean;
+  blocked: boolean
   /**
    * Plain-language list of the LIVE on-chain reads the guardian performed this
    * run (e.g. "Simulated this exact transaction on Sui", "Checked your live
    * balance") — proof the guardian inspects real state, not canned warnings.
    * The agent may narrate these.
    */
-  inspected?: string[];
-};
+  inspected?: string[]
+}
 
 /**
  * `defi_intent_execute` — terminal. `digest` is base58, NOT tx_hash
  * (spec §6.5).
  */
 export type DefiIntentExecuteResult = {
-  digest: string;
+  digest: string
   /** "testnet" | "mainnet" | "devnet". */
-  network: string;
-};
+  network: string
+}
