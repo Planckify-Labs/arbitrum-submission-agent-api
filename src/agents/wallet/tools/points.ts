@@ -127,7 +127,10 @@ export const WALLET_POINTS_TOOLS: Record<string, ToolMeta> = composeAgentTools(
           },
           take: {
             type: 'integer',
-            description: 'Maximum number of results to return.',
+            description:
+              'Page size. Leave unset for the default (12). The server caps ' +
+              'this at 24 — do NOT ask for a huge list to "show everything"; ' +
+              'the user pages through results in the UI.',
             minimum: 1,
           },
           cursor: {
