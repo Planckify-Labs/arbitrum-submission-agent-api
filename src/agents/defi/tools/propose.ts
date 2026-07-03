@@ -24,13 +24,26 @@ const DEFI_DEPOSIT: ToolMeta = {
   executor: 'mobile',
   capability: 'write',
   description:
-    'Deposit into a single DeFi opportunity.',
+    'Deposit into a single DeFi opportunity. To deposit into a SPECIFIC pool ' +
+    'the user picked from defi_list_opportunities, pass its `pool_id` — the ' +
+    'executor resolves the exact on-chain vault/market server-side. NEVER pass ' +
+    'a contract/vault/market address yourself; you only ever pass pool_id and ' +
+    'the symbol/amount.',
   inputSchema: {
     type: 'object',
     properties: {
       protocol_slug: {
         type: 'string',
         description: 'Adapter selector, e.g. "aave-v3-base".',
+      },
+      pool_id: {
+        type: 'string',
+        description:
+          'The DeFiLlama poolId (`pool_id`) of the exact pool the user picked ' +
+          'from defi_list_opportunities. Pass it whenever available so the ' +
+          "deposit targets that precise pool (not just the protocol's " +
+          'canonical market). The executor re-fetches the authoritative ' +
+          'on-chain target for this poolId — you never supply an address.',
       },
       chain_id: {
         type: 'integer',
@@ -71,8 +84,7 @@ const DEFI_WITHDRAW: ToolMeta = {
   category: 'utility',
   executor: 'mobile',
   capability: 'write',
-  description:
-    'Withdraw partially or fully from a DeFi position.',
+  description: 'Withdraw partially or fully from a DeFi position.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -109,8 +121,7 @@ const DEFI_REBALANCE: ToolMeta = {
     properties: {
       from_position_id: {
         type: 'string',
-        description:
-          'Id of the position to exit (from `defi_list_positions`).',
+        description: 'Id of the position to exit (from `defi_list_positions`).',
       },
       to_protocol_slug: {
         type: 'string',
@@ -169,7 +180,7 @@ const DEFI_CROSS_CHAIN_DEPOSIT: ToolMeta = {
       to_chain_id: {
         type: 'integer',
         description:
-          'Destination EVM chain id. Must match the adapter\'s chain.',
+          "Destination EVM chain id. Must match the adapter's chain.",
         minimum: 1,
       },
       from_asset_symbol: {
@@ -180,7 +191,7 @@ const DEFI_CROSS_CHAIN_DEPOSIT: ToolMeta = {
         'Optional explicit source ERC20 contract (lowercased). When omitted the executor resolves it from the mobile token registry.',
       ),
       to_asset_contract: ADDRESS_PROP(
-        'Optional explicit destination ERC20 contract (lowercased). Defaults to the destination opportunity\'s underlying asset.',
+        "Optional explicit destination ERC20 contract (lowercased). Defaults to the destination opportunity's underlying asset.",
       ),
       amount_raw: {
         type: 'string',

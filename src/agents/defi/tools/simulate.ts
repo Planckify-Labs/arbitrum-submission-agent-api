@@ -44,6 +44,14 @@ const DEFI_SIMULATE_DEPOSIT: ToolMeta = {
         type: 'string',
         description: 'Adapter selector, e.g. "aave-v3-base".',
       },
+      pool_id: {
+        type: 'string',
+        description:
+          'The DeFiLlama poolId of the exact pool being previewed. Pass the ' +
+          'same pool_id you will pass to defi_deposit so the dry-run builds ' +
+          'against that precise pool. The executor resolves the on-chain ' +
+          'target for it — never supply an address.',
+      },
       chain_id: {
         type: 'integer',
         description: 'EVM chain id the deposit targets.',
