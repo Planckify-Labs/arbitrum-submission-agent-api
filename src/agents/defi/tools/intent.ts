@@ -97,6 +97,17 @@ const DEFI_INTENT_PREVIEW: ToolMeta = {
         description:
           'For swap: max slippage in basis points (default 50 = 0.5%).',
       },
+      poolId: {
+        type: 'string',
+        description:
+          'For supply/withdraw/swap_and_supply: the exact DeFiLlama poolId the ' +
+          'user picked from defi_list_opportunities (pass through verbatim — it ' +
+          'is an opaque id, NEVER an on-chain address). Pins the deposit (or the ' +
+          "zap's supply leg) to that exact pool; the device re-resolves the " +
+          'on-chain target server-side. Required for multi-vault venues (e.g. ' +
+          'Ember) where "venue" alone is ambiguous; omit for a single-market ' +
+          'venue.',
+      },
     },
     required: ['action'],
     additionalProperties: false,
