@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { CARD_BACKED_TOOL_NAMES } from './cardBackedTools';
 import type { ToolMeta } from './types';
 
 interface AgentManifestEntry {
@@ -56,6 +57,14 @@ export function composeAgentTools(
       throw new Error(
         `[tools/compose] tool "${name}" does not match any prefix of agent "${agentId}" (prefixes: ${prefixes.join(', ')})`,
       );
+    }
+
+    // Stamp the card-backed contract from the single source of truth
+    // (mirrors mobile `toolComponents`). An inline `rendersCard: true`
+    // on the meta is preserved; the central set is additive.
+    const meta = tools[name];
+    if (meta.rendersCard || CARD_BACKED_TOOL_NAMES.has(name)) {
+      meta.rendersCard = true;
     }
   }
 

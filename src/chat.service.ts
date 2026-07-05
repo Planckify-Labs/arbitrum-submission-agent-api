@@ -27,6 +27,7 @@ import {
   listSpecialistIds,
 } from './agents/agentConfig'
 import { CORE_CONTINUATION_NOTE } from './agents/core/systemPrompt'
+import { buildCardBackedToolRule } from './agents/sharedPrompt'
 import {
   type CoreDecision,
   decideCoreRoute,
@@ -388,7 +389,7 @@ export class ChatService implements OrchestratorEngine {
     const mcpTools = await this.getMcpTools()
     this.prepareTurnWatermark(session, priorMessageCount)
     const cfg: AgentTurnConfig = {
-      system: buildSystemPrompt(session.wallet_context),
+      system: `${buildSystemPrompt(session.wallet_context)}${buildCardBackedToolRule(TOOL_REGISTRY)}`,
       llmTools: buildAllTools(TOOL_REGISTRY, mcpTools),
       model: this.getModel(),
     }
@@ -861,7 +862,8 @@ export class ChatService implements OrchestratorEngine {
     const briefNote = brief
       ? `\n\n## This turn — do ONLY this\n${brief}\n\nThis is the ONLY thing to handle this turn. The user's latest message may bundle other requests that are NOT your job — IGNORE those parts completely. A coordinator routes them to the right specialist separately. Do NOT mention, decline, or suggest workarounds for anything outside this step (e.g. don't say "I can't swap" or point the user to another app) — just do this step and stop.`
       : ''
-    return `${header}\n\n${config.buildSystemPrompt()}${briefNote}`
+    const cardRule = buildCardBackedToolRule(config.tools)
+    return `${header}\n\n${config.buildSystemPrompt()}${cardRule}${briefNote}`
   }
 
   /** Terminal `done` event (conversation meta + usage). */

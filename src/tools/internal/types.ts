@@ -54,4 +54,16 @@ export interface ToolMeta {
    * normal tool. "Some tools have it, some don't."
    */
   x402?: { resourceId: string };
+  /**
+   * True when this tool's result renders as a full interactive UI card in
+   * the mobile chat (balances, opportunity/position lists, receipts,
+   * previews, catalogs, …) — i.e. the user already SEES the data. The
+   * engine injects the set of these tool names into the system prompt so
+   * the model knows not to re-list / re-tabulate what the card shows
+   * (see `sharedPrompt.ts` "Tool result UI"). Normally stamped centrally
+   * from `CARD_BACKED_TOOL_NAMES` by `composeAgentTools`; a new tool may
+   * also set it inline. Source of truth mirrors the mobile
+   * `StructuredUI/registry.ts` `toolComponents` map.
+   */
+  rendersCard?: boolean;
 }
