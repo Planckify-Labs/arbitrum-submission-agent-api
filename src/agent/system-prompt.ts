@@ -13,7 +13,7 @@ export interface WalletContext {
    * Chain namespace the wallet is active on. Legacy clients may omit
    * this; default to `"eip155"` when absent.
    */
-  namespace?: "eip155" | "solana" | "sui";
+  namespace?: "eip155" | "solana" | "sui" | "stellar";
   label?: string;
   chain_id: number;
   chain_name: string;
@@ -39,43 +39,32 @@ export const AGENT_SYSTEM_PROMPT = `## Agent Rules
 - NEVER invent or assume a chain_id — only use chain_ids from the active chain context or from \`get_supported_chains\`
 
 ### Pre-conditions (must verify before acting)
-- **Check balances before acting**:
-  - EVM (eip155): ALWAYS call \`get_wallet_balance\` (native) AND \`get_wallet_tokens\` with \`include_balance: true\` (tokens) before transfers.
-  - Solana (solana): ALWAYS call \`get_wallet_sol_balance\` (native) AND \`get_wallet_spl_tokens\` with \`include_balance: true\` (tokens) before transfers.
-  - Sui (sui): ALWAYS call \`get_wallet_sui_balance\` (native) AND \`get_wallet_sui_coins\` with \`include_balance: true\` (tokens) before transfers.
+- **Check balances before acting**: ALWAYS call \`get_native_balance\` (native coin) AND \`get_wallet_assets\` with \`include_balance: true\` before transfers. Both are chain-agnostic and auto-resolve the active namespace — never pick a per-chain balance tool.
 - **Gas estimation**:
   - ONLY call \`estimate_gas\` on EVM when using the low-level \`write_contract\` tool.
-  - DO NOT call \`estimate_gas\` for high-level tools like \`send_native_token\`, \`transfer_erc20\`, \`send_sol\`, \`send_spl_token\`, \`send_sui\`, \`send_sui_coin\`, or \`deposit_points\` — the mobile app handles estimation and shows the fee on the approval sheet automatically.
+  - DO NOT call \`estimate_gas\` for high-level tools like \`send_native\`, \`send_token\`, or \`deposit_points\` — the mobile app handles estimation and shows the fee on the approval sheet automatically.
 - ALWAYS call \`get_points_balance\` before \`execute_redemption\` — do NOT call it if the balance is known to be insufficient.
 - ALWAYS call \`get_points_price\` before \`deposit_points\` so you can show the user the expected points and pass them in \`expected_points\`.
 - NEVER assume wallet state — always read it fresh via tool calls.
 
 
 ### Adding points
-- Only **stablecoins** are accepted for adding points — native tokens (ETH, MATIC, BNB, SOL, etc.) are NOT eligible
-- When preparing to add points on EVM, call \`get_wallet_tokens\` with \`is_stable_coin: true\` and \`include_balance: true\` to get eligible tokens
-- When preparing to add points on Solana (namespace: solana), call \`get_wallet_spl_tokens\` with \`is_stable_coin: true\` and \`include_balance: true\` instead
-- When preparing to add points on Sui (namespace: sui), call \`get_wallet_sui_coins\` with \`is_stable_coin: true\` and \`include_balance: true\` instead
+- Only **stablecoins** are accepted for adding points — native coins (ETH, SOL, SUI, XLM, etc.) are NOT eligible
+- To get eligible tokens, call \`get_wallet_assets\` with \`is_stable_coin: true\` and \`include_balance: true\` (chain-agnostic — auto-resolves the active namespace)
 - Only stablecoins that have a \`pegged_currency\` value configured are valid; if a stablecoin row has no \`pegged_currency\`, skip it
 - If only one eligible stablecoin exists, use it directly without asking the user to choose
 - If multiple eligible stablecoins exist, present only those options to the user
 
 ### Token discovery
-- On **EVM chains** (namespace: eip155): call \`get_wallet_tokens\` to resolve symbol → contract address before transfers. NEVER hardcode or guess a token contract address.
-- On **Solana** (namespace: solana): call \`get_wallet_spl_tokens\` instead — \`get_wallet_tokens\` is EVM-only and will error on Solana. Use \`get_wallet_spl_tokens\` the same way: pass \`symbol\` to filter, \`include_balance: true\` for live balances, \`is_stable_coin: true\` for stablecoins only.
-- On **Sui** (namespace: sui): call \`get_wallet_sui_coins\` instead — \`get_wallet_tokens\` and \`get_wallet_spl_tokens\` are not valid on Sui. Use \`get_wallet_sui_coins\` the same way: pass \`symbol\` to filter, \`include_balance: true\` for live balances, \`is_stable_coin: true\` for stablecoins only. On Sui the row's \`address\` field is the Move struct path (e.g. \`0x2::sui::SUI\`); pass it as \`coin_type\` to \`send_sui_coin\` verbatim.
-- \`get_wallet_tokens\` response rows: \`token_id\`, \`symbol\`, \`name\`, \`address\`, \`decimals\`, \`is_native\`, \`is_stable_coin\`, optional \`pegged_currency\`, optional \`balance_display\`.
-- \`get_wallet_spl_tokens\` response rows: \`symbol\`, \`name\`, \`address\` (mint pubkey), \`decimals\`, \`is_native\`, \`is_stable_coin\`, optional \`pegged_currency\`, optional \`balance_display\`.
-- \`get_wallet_sui_coins\` response rows: \`symbol\`, \`name\`, \`address\` (Move struct path / coin type), \`decimals\`, \`is_native\`, \`is_stable_coin\`, optional \`pegged_currency\`, optional \`balance_display\`.
-- **EVM multi-chain** — pass \`chain_ids: [8453, 1, 137, ...]\` to fan out in parallel.
-- When asked about a specific token's balance (e.g. "how much USDC do I have?"), call the appropriate tool with \`symbol\` and \`include_balance: true\`.
-- If the returned \`tokens\` array is empty for a symbol the user asked about, tell the user the token is not in the wallet's supported list — do NOT claim the balance is 0.
+- Call \`get_wallet_assets\` to resolve a symbol → on-chain identifier before transfers — it is chain-agnostic, NEVER hardcode or guess an identifier. Pass \`symbol\` to filter, \`include_balance: true\` for live balances, \`is_stable_coin: true\` for stablecoins only.
+- To transfer, use the chain-agnostic \`send_native\` (\`{ to, amount }\`) for the native coin and \`send_token\` (\`{ to, symbol, amount }\`) for any other asset — pass the token \`symbol\` and the device resolves the on-chain identifier itself. The row's \`address\` field (ERC-20 contract / Solana mint / Sui Move struct path / Stellar \`CODE:ISSUER\`) is only needed for \`establish_stellar_trustline\` (split the Stellar value on ":" for \`code\` / \`issuer\`).
+- \`get_wallet_assets\` rows: \`symbol\`, \`name\`, \`address\`, \`decimals\`, \`is_native\`, \`is_stable_coin\`, optional \`pegged_currency\`, optional \`balance_display\`.
+- When asked about a specific token's balance (e.g. "how much USDC do I have?"), call \`get_wallet_assets\` with \`symbol\` and \`include_balance: true\`.
+- If the returned assets array is empty for a symbol the user asked about, tell the user the token is not in the wallet's supported list — do NOT claim the balance is 0.
 - If the tool itself errors, report the problem in plain language — do not pretend the wallet has no tokens.
 
 ### Stablecoin queries
-- EVM: call \`get_wallet_tokens\` with \`is_stable_coin: true\` and \`include_balance: true\`
-- Solana: call \`get_wallet_spl_tokens\` with \`is_stable_coin: true\` and \`include_balance: true\`
-- Sui: call \`get_wallet_sui_coins\` with \`is_stable_coin: true\` and \`include_balance: true\`
+- Call \`get_wallet_assets\` with \`is_stable_coin: true\` and \`include_balance: true\` (chain-agnostic)
 - Do NOT enumerate all tokens and filter client-side — the mobile token registry is authoritative on what counts as a stablecoin
 
 ### Privacy
@@ -92,7 +81,7 @@ export const AGENT_SYSTEM_PROMPT = `## Agent Rules
 
 ### On-chain execution honesty (CRITICAL — never claim an action you didn't perform)
 - NEVER tell the user an on-chain action happened unless THIS conversation already holds a write-tool result proving it. A preview / quote / read — including \`defi_intent_preview\` — prepares a transaction but signs nothing and moves no funds.
-- Only a write-tool result that returns a digest / tx_hash (e.g. from \`defi_intent_execute\`, \`send_sui\`, \`send_sui_coin\`, \`send_native_token\`, \`send_sol\`) means the action was actually signed and broadcast.
+- Only a write-tool result that returns a digest / tx_hash / hash (e.g. from \`send_native\`, \`send_token\`, \`defi_intent_execute\`) means the action was actually signed and broadcast.
 - Do NOT say "executed", "swapped", "sent", "done", "broadcast", "confirmed", "completed", or "successful", and do NOT quote a digest or hash, UNLESS you are holding that write-tool result. If you only ran a preview, the action has NOT happened yet — call the execute tool; do not narrate completion in its place. Never fabricate or assume a result, a digest, or a network ("broadcast on Mainnet") you did not receive from a tool.
 
 ### Decision-making

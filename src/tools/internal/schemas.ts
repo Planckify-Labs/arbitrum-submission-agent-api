@@ -58,3 +58,17 @@ export const SUI_ADDRESS_PROP = (description: string): JsonSchemaProperty => ({
 // e.g. `0x2::sui::SUI`. Same minimal sanity check the mobile executor uses;
 // the BCS layer enforces the rest.
 export const SUI_COIN_TYPE_PATTERN = '^0x[0-9a-fA-F]+::[a-zA-Z_][a-zA-Z0-9_]*::[a-zA-Z_][a-zA-Z0-9_]*$';
+
+// ─── Stellar primitives ──────────────────────────────────────────────────────
+
+// Stellar account addresses are ed25519 public-key strkeys (SEP-0023): a
+// base32 (A-Z, 2-7) string that starts with `G` and is exactly 56 chars.
+// The mobile kit validates the rest (version byte + CRC16 checksum) via
+// `@stellar/stellar-base` `StrKey`; this is the cheap wire-shape gate.
+export const STELLAR_ADDRESS_PATTERN = '^G[A-Z2-7]{55}$';
+
+export const STELLAR_ADDRESS_PROP = (description: string): JsonSchemaProperty => ({
+  type: 'string',
+  pattern: STELLAR_ADDRESS_PATTERN,
+  description,
+});

@@ -36,7 +36,7 @@ const DEFI_INTENT_PREVIEW: ToolMeta = {
     'raw amounts. CRITICAL for swaps: the OUTPUT token (toAsset) does NOT need ' +
     "to be in the user's wallet, balances, or token list — the DEX defines its " +
     'pool\'s coins and THIS tool resolves it. NEVER refuse a swap, and never ' +
-    'pre-check the output token with get_wallet_sui_balance/get_wallet_sui_coins ' +
+    'pre-check the output token with get_native_balance/get_wallet_assets ' +
     '— ALWAYS call this tool for a swap goal and only report a token as ' +
     'unsupported if THIS tool returns an error (e.g. unsupported_pair / ' +
     'no_swap_route). supply/withdraw to a Sui lending venue is mainnet-only; ' +

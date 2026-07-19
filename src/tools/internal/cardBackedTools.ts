@@ -17,6 +17,11 @@
  */
 export const CARD_BACKED_TOOL_NAMES: ReadonlySet<string> = new Set([
   // Transfers / writes → PendingTx / Solana / Sui receipt cards
+  // Chain-agnostic capability sends (the model-facing surface).
+  'send_native',
+  'send_token',
+  // Superseded per-namespace variants — hidden from the model but still
+  // card-backed for history replay.
   'send_native_token',
   'transfer_erc20',
   'write_contract',
@@ -24,11 +29,19 @@ export const CARD_BACKED_TOOL_NAMES: ReadonlySet<string> = new Set([
   'send_spl_token',
   'send_sui',
   'send_sui_coin',
+  'send_xlm',
+  'send_stellar_asset',
+  'establish_stellar_trustline',
   // Approvals / swap quote
   'approve_spending',
   'approveSpending',
   'swap_quote',
   // Balance reads → BalancesCard
+  // Chain-agnostic capability tools (the model-facing surface).
+  'get_native_balance',
+  'get_wallet_assets',
+  // Superseded per-namespace variants — hidden from the model but still
+  // card-backed for history replay.
   'get_wallet_tokens',
   'get_wallet_spl_tokens',
   'get_wallet_sui_coins',
@@ -38,6 +51,9 @@ export const CARD_BACKED_TOOL_NAMES: ReadonlySet<string> = new Set([
   'get_wallet_sol_balance',
   'get_sui_balance',
   'get_wallet_sui_balance',
+  'get_wallet_stellar_assets',
+  'get_xlm_balance',
+  'get_wallet_xlm_balance',
   // Rewards catalog / product detail
   'get_redemption_catalog',
   'search_redemption_catalog',

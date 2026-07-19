@@ -45,6 +45,10 @@ export const walletCard: AgentCard = {
     // TOOL_REGISTRY. Add them here so mobile boot doesn't crash.
     'cancel_',
     'create_',
+    // `establish_` (establish_stellar_trustline) — Stellar-only opt-in
+    // (changeTrust). No cross-chain analogue; new verb family owned by
+    // Wallet alongside the other Stellar send tools.
+    'establish_',
     // `x402_` (x402_fetch) — agent-initiated x402 micropayments (Phase 5).
     'x402_',
   ],

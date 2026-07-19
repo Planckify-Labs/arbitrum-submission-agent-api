@@ -96,7 +96,7 @@ export type AgentPeerMessage = {
  */
 export type WalletContext = {
   address: string
-  namespace?: 'eip155' | 'solana' | 'sui'
+  namespace?: 'eip155' | 'solana' | 'sui' | 'stellar'
   chain_id: number
   chain_name?: string
   chain_symbol?: string

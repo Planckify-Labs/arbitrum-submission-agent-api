@@ -35,6 +35,7 @@ import {
   type StepResult,
 } from './agents/engine'
 import { StreamSanitizer, stripMachineryLeak } from './agents/leakFilter'
+import { scopeToolsForModel } from './agents/wallet/tools/namespaceScope'
 import { resolveModel } from './agents/models'
 import { orchestrate } from './agents/orchestrator'
 import {
@@ -390,7 +391,14 @@ export class ChatService implements OrchestratorEngine {
     this.prepareTurnWatermark(session, priorMessageCount)
     const cfg: AgentTurnConfig = {
       system: `${buildSystemPrompt(session.wallet_context)}${buildCardBackedToolRule(TOOL_REGISTRY)}`,
-      llmTools: buildAllTools(TOOL_REGISTRY, mcpTools),
+      // Scope to the active wallet namespace + hide capability-superseded
+      // per-namespace tools: a turn is pinned to one namespace, and the
+      // chain-agnostic capability tools are the model-facing balance/asset
+      // surface. See `namespaceScope.ts`.
+      llmTools: buildAllTools(
+        scopeToolsForModel(TOOL_REGISTRY, session.wallet_context?.namespace),
+        mcpTools,
+      ),
       model: this.getModel(),
     }
     yield* this.runAgentTurn(session, cfg, mcpTools)
@@ -1048,7 +1056,14 @@ export class ChatService implements OrchestratorEngine {
     const mcpTools = await this.getMcpTools()
     const cfg: AgentTurnConfig = {
       system: this.buildAgentSystem(session, config, brief),
-      llmTools: buildAllTools(config.tools, mcpTools),
+      // Scope to the active wallet namespace + hide capability-superseded
+      // per-namespace balance/asset tools, so the specialist sees the
+      // chain-agnostic capability tools instead of a sibling namespace's
+      // variants. No-op for agents with no chain-bound tools.
+      llmTools: buildAllTools(
+        scopeToolsForModel(config.tools, session.wallet_context?.namespace),
+        mcpTools,
+      ),
       model,
     }
     yield* this.runAgentTurn(session, cfg, mcpTools)

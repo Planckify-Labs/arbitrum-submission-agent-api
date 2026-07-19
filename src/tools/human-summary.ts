@@ -105,6 +105,23 @@ export function buildHumanSummary(
       return `Estimate gas for transfer to ${to}`
     }
 
+    // ─── write — chain-agnostic capability sends ────────────────────────────
+    // send_native: human-readable `amount` of the active chain's native coin.
+    // The server doesn't know the namespace's symbol here, so the label stays
+    // coin-agnostic; the mobile receipt card shows the resolved coin.
+    case 'send_native': {
+      const amount = str(input, 'amount')
+      const to = truncateAddress(input.to)
+      return `Send ${amount} to ${to}`
+    }
+    // send_token: `symbol` + human-readable `amount`.
+    case 'send_token': {
+      const amount = str(input, 'amount')
+      const symbol = str(input, 'symbol')
+      const to = truncateAddress(input.to)
+      return `Send ${amount} ${symbol} to ${to}`
+    }
+
     // ─── write ─────────────────────────────────────────────────────────────
     // send_native_token: `value_wei` is the base-10 amount, `to` is the
     // destination. The agent passes chain_id (integer), not chain_name.
@@ -133,6 +150,28 @@ export function buildHumanSummary(
       const amount = str(input, 'token_amount')
       const to = truncateAddress(input.to)
       return `Send ${amount} tokens to ${to}`
+    }
+
+    // ─── write — Stellar ────────────────────────────────────────────────────
+    // send_xlm: `amount_xlm` is human-readable, `to` is a G… strkey.
+    case 'send_xlm': {
+      const amount = str(input, 'amount_xlm')
+      const to = truncateAddress(input.to)
+      return `Send ${amount} XLM to ${to}`
+    }
+    // send_stellar_asset: `amount` is human-readable, `code` is the asset
+    // code (e.g. USDC), `to` is a G… strkey.
+    case 'send_stellar_asset': {
+      const amount = str(input, 'amount')
+      const code = str(input, 'code')
+      const to = truncateAddress(input.to)
+      return `Send ${amount} ${code} to ${to}`
+    }
+    // establish_stellar_trustline: opt the connected wallet into holding an
+    // asset. No amount — it authorizes future receipts of `code`.
+    case 'establish_stellar_trustline': {
+      const code = str(input, 'code')
+      return `Add a trustline for ${code}`
     }
 
     // transfer_erc20: `token_amount` is human-readable, `contract_address` is
@@ -273,6 +312,11 @@ export function buildHumanSummary(
     // Reads never surface in an approval sheet, but the registry test
     // requires every tool name to map to a non-empty summary string so we
     // stub them out here as simple labels.
+    // Chain-agnostic capability reads (the model-facing balance surface).
+    case 'get_native_balance':
+      return 'Fetch connected wallet balance'
+    case 'get_wallet_assets':
+      return 'Fetch wallet asset list'
     case 'get_wallet_tokens':
       return 'Fetch wallet token list'
     case 'get_sol_balance':
@@ -285,6 +329,12 @@ export function buildHumanSummary(
       return 'Fetch connected wallet SUI balance'
     case 'get_wallet_sui_coins':
       return 'Fetch wallet Sui coin list'
+    case 'get_xlm_balance':
+      return 'Fetch Stellar address balance'
+    case 'get_wallet_xlm_balance':
+      return 'Fetch connected wallet XLM balance'
+    case 'get_wallet_stellar_assets':
+      return 'Fetch wallet Stellar asset list'
     case 'get_redemption_categories':
       return 'Fetch redemption categories'
     case 'get_redemption_catalog':

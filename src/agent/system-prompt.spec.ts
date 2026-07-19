@@ -29,13 +29,7 @@ describe('AGENT_SYSTEM_PROMPT', () => {
       '### Pre-conditions (must verify before acting)',
     );
     expect(AGENT_SYSTEM_PROMPT).toContain(
-      'EVM (eip155): ALWAYS call `get_wallet_balance` (native) AND `get_wallet_tokens` with `include_balance: true` (tokens) before transfers.',
-    );
-    expect(AGENT_SYSTEM_PROMPT).toContain(
-      'Solana (solana): ALWAYS call `get_wallet_sol_balance` (native) AND `get_wallet_spl_tokens` with `include_balance: true` (tokens) before transfers.',
-    );
-    expect(AGENT_SYSTEM_PROMPT).toContain(
-      'Sui (sui): ALWAYS call `get_wallet_sui_balance` (native) AND `get_wallet_sui_coins` with `include_balance: true` (tokens) before transfers.',
+      'ALWAYS call `get_native_balance` (native coin) AND `get_wallet_assets` with `include_balance: true` before transfers',
     );
     expect(AGENT_SYSTEM_PROMPT).toContain(
       'ONLY call `estimate_gas` on EVM when using the low-level `write_contract` tool.',
