@@ -8,6 +8,7 @@ import { AgentController } from './agents/agent.controller'
 import { ApiKeyGuard } from './guards/api-key.guard'
 import { MCPClientService } from './mcp-client.service'
 import { SessionModule } from './session'
+import { SummarizeController } from './summarize.controller'
 import { TranscribeController } from './transcribe.controller'
 import { ValkeyModule } from './valkey/valkey.module'
 import { PrismaModule } from './prisma/prisma.module'
@@ -29,6 +30,7 @@ import { X402CatalogService } from './x402/x402-catalog.service'
     ChatController,
     AgentController,
     TranscribeController,
+    SummarizeController,
   ],
   providers: [
     AppService,
