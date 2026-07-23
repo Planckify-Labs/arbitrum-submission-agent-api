@@ -118,6 +118,28 @@ export const SUPERSEDED_BY_CAPABILITY: ReadonlySet<string> = new Set([
 ]);
 
 /**
+ * Tools that stay fully REGISTERED (mobile executors, registry parity,
+ * history replay, card `tool_prefixes` all unchanged) but are hidden from
+ * the LLM's model-facing tool set — the agent is never offered them, so it
+ * can never call them.
+ *
+ * `x402_fetch` (agent-initiated x402 micropayments) is turned OFF in agent
+ * mode here. The whole x402 stack stays intact — the mobile executor, the
+ * resource catalog, the settlement rails, and the user-initiated x402
+ * payment flows (QR / nanopay) are untouched — we only stop the agent from
+ * autonomously spending the pre-signed allowance. Re-enable by removing the
+ * entry.
+ *
+ * `scopeToolsForModel` also hides any tool carrying an `x402` marker
+ * (`ToolMeta.x402`), so a future x402-backed tool is covered by intent
+ * without editing this set.
+ */
+export const HIDDEN_FROM_MODEL: ReadonlySet<string> = new Set([
+  // agent-initiated x402 micropayments (Phase 5) — disabled in agent mode.
+  'x402_fetch',
+]);
+
+/**
  * Drop every namespace-bound tool that does not belong to `active`, keeping
  * namespace-agnostic tools untouched. A missing/legacy namespace is treated
  * as `eip155` (the pre-v1.1 default — see `WalletContext`).
@@ -142,8 +164,10 @@ export function scopeToolsToNamespace(
 
 /**
  * The full model-facing filter for a wallet turn: scope to the active
- * namespace AND drop tools superseded by the capability tools. This is what
- * the engine hands the LLM. Both passes are pure and order-independent.
+ * namespace, drop tools superseded by the capability tools, and drop tools
+ * hidden from the model (`HIDDEN_FROM_MODEL` + any `x402`-marked tool — see
+ * that set). This is what the engine hands the LLM. All passes are pure and
+ * order-independent.
  */
 export function scopeToolsForModel(
   tools: Record<string, ToolMeta>,
@@ -152,9 +176,14 @@ export function scopeToolsForModel(
   const scoped = scopeToolsToNamespace(tools, active);
   const out: Record<string, ToolMeta> = {};
   for (const [name, meta] of Object.entries(scoped)) {
-    if (!SUPERSEDED_BY_CAPABILITY.has(name)) {
-      out[name] = meta;
+    if (
+      SUPERSEDED_BY_CAPABILITY.has(name) ||
+      HIDDEN_FROM_MODEL.has(name) ||
+      meta.x402
+    ) {
+      continue;
     }
+    out[name] = meta;
   }
   return out;
 }

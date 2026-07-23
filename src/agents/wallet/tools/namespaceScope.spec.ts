@@ -1,5 +1,6 @@
 import { WALLET_TOOLS } from './index';
 import {
+  HIDDEN_FROM_MODEL,
   namespaceOfTool,
   scopeToolsForModel,
   scopeToolsToNamespace,
@@ -108,12 +109,27 @@ describe('namespaceScope', () => {
       expect(names).toContain('get_xlm_balance');
       // agnostic tools stay
       expect(names).toContain('get_wallet_address');
-      expect(names).toContain('x402_fetch');
     });
 
-    it('every superseded tool still exists in the full registry (only hidden)', () => {
+    it('hides x402_fetch from the model (x402 turned off in agent mode)', () => {
+      // x402_fetch is namespace-agnostic, so namespace scoping alone keeps it…
+      expect(
+        Object.keys(scopeToolsToNamespace(WALLET_TOOLS, 'stellar')),
+      ).toContain('x402_fetch');
+      // …but the full model-facing filter drops it on every namespace.
+      for (const ns of ['eip155', 'solana', 'sui', 'stellar'] as const) {
+        expect(Object.keys(scopeToolsForModel(WALLET_TOOLS, ns))).not.toContain(
+          'x402_fetch',
+        );
+      }
+    });
+
+    it('every superseded / hidden tool still exists in the full registry (only hidden)', () => {
       for (const superseded of SUPERSEDED_BY_CAPABILITY) {
         expect(WALLET_TOOLS[superseded]).toBeDefined();
+      }
+      for (const hidden of HIDDEN_FROM_MODEL) {
+        expect(WALLET_TOOLS[hidden]).toBeDefined();
       }
     });
   });
