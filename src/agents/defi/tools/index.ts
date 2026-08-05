@@ -17,6 +17,7 @@
  */
 
 import type { ToolMeta } from '../../../tools/internal/types'
+import { BRIDGE_TOOLS } from './bridge'
 import { DEFI_CLAIM_TOOLS } from './claim'
 import { DEFI_INTENT_TOOLS } from './intent'
 import { DEFI_OPPORTUNITY_TOOLS } from './opportunities'
@@ -30,6 +31,7 @@ export { DEFI_CONFIG_TOOLS } from './reads-extra'
 export { DEFI_SIMULATE_TOOLS } from './simulate'
 export { DEFI_CLAIM_TOOLS } from './claim'
 export { DEFI_INTENT_TOOLS } from './intent'
+export { BRIDGE_TOOLS } from './bridge'
 
 export const DEFI_TOOLS: Record<string, ToolMeta> = {
   ...DEFI_OPPORTUNITY_TOOLS,
@@ -38,4 +40,7 @@ export const DEFI_TOOLS: Record<string, ToolMeta> = {
   ...DEFI_PROPOSE_TOOLS,
   ...DEFI_CLAIM_TOOLS,
   ...DEFI_INTENT_TOOLS,
+  // General-purpose bridge (bridge-capability-spec §8.3). Owned by the
+  // DeFi agent; the `bridge_` prefix is declared on it in the manifest.
+  ...BRIDGE_TOOLS,
 }

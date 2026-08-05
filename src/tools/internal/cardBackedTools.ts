@@ -68,6 +68,13 @@ export const CARD_BACKED_TOOL_NAMES: ReadonlySet<string> = new Set([
   'defi_rebalance',
   'defi_intent_preview',
   'defi_intent_execute',
+  // Bridge (bridge-capability-spec §7). The quote card carries the full
+  // disclosure surface (minimum received, itemised fees, destination
+  // address, readiness blockers) and the progress card walks the
+  // four-step lifecycle, so the model must not re-tabulate any of it.
+  'bridge_quote',
+  'bridge_execute',
+  'bridge_status',
   // Paid-resource fetch
   'x402_fetch',
 ]);

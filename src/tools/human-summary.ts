@@ -275,6 +275,27 @@ export function buildHumanSummary(
       return `Claim rewards on position ${position} and redeposit`
     }
 
+    // ─── bridge (bridge-capability-spec §8.1, §8.3) ─────────────────────────
+    // Fallback copy only. The approval surface renders FACTS from the tool
+    // args via the mobile `approvalSummary.ts` / `BridgeQuoteCard`; this
+    // string is never the primary approval text
+    // (`project_facts_first_approval_summary`).
+    case 'bridge_execute': {
+      const amount = str(input, 'amount_raw')
+      const fromChain = str(input, 'from_chain')
+      const toChain = str(input, 'to_chain')
+      return `Bridge ${amount} from ${fromChain} to ${toChain}`
+    }
+    case 'bridge_quote': {
+      const fromChain = str(input, 'from_chain')
+      const toChain = str(input, 'to_chain')
+      return `Quote a bridge from ${fromChain} to ${toChain}`
+    }
+    case 'bridge_status':
+      return 'Check the progress of a bridge transfer'
+    case 'bridge_get_support':
+      return 'Check which chains can be bridged between'
+
     // ─── defi / Sui Intent Engine (spec §6.2) ───────────────────────────────
     // defi_intent_execute (write): the approval sheet shows this. Generic +
     // approval-safe — the server has only the intent_id at call time, not

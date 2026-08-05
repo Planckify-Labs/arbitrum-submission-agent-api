@@ -19,9 +19,20 @@ export const defiCard: AgentCard = {
   version: '0.1.0',
   display_name: 'DeFi specialist',
   description:
-    'Owns yield strategies, opportunity discovery, rebalances, and position reads.',
-  tool_prefixes: ['defi_'],
-  capabilities: ['yield_discovery', 'position_read', 'deposit', 'withdraw', 'rebalance'],
+    'Owns yield strategies, opportunity discovery, rebalances, position reads, ' +
+    'and cross-chain transfers.',
+  tool_prefixes: ['defi_', 'bridge_'],
+  capabilities: [
+    'yield_discovery',
+    'position_read',
+    'deposit',
+    'withdraw',
+    'rebalance',
+    // General-purpose cross-chain transfer (bridge-capability-spec §8.3).
+    // Standalone, not welded to a deposit: moving USDC from Base to
+    // Arbitrum is a goal in its own right.
+    'bridge',
+  ],
   requires_wallet_context: true,
   requires_jwt: true,
   default_system_prompt_ref: 'defi.v1',

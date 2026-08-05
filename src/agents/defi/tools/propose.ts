@@ -172,16 +172,37 @@ const DEFI_CROSS_CHAIN_DEPOSIT: ToolMeta = {
         description:
           'Target adapter selector on the destination chain, e.g. "aave-v3-base".',
       },
+      // Bridge-capability-spec §4.4: an `integer` chain id cannot carry a
+      // CAIP-2 id, so a Solana or Sui leg was inexpressible. `from_chain`
+      // is the form to use; the integer stays as a deprecated alias so
+      // existing callers keep working unchanged.
+      from_chain: {
+        type: 'string',
+        pattern: '^[-a-z0-9]{3,8}:[-_a-zA-Z0-9]{1,32}$',
+        description:
+          'Source chain as a CAIP-2 id, e.g. "eip155:8453". Preferred over ' +
+          'from_chain_id, and the only form that can express a non-EVM chain.',
+      },
       from_chain_id: {
         type: 'integer',
-        description: 'Source EVM chain id (where the user holds the funds).',
+        description:
+          'Deprecated. Source EVM chain id. Prefer from_chain; kept so existing callers keep working.',
         minimum: 1,
       },
       to_chain_id: {
         type: 'integer',
         description:
-          "Destination EVM chain id. Must match the adapter's chain.",
+          'Deprecated and ignored. The destination is whichever chain hosts ' +
+          'protocol_slug, and the executor resolves it from the adapter.',
         minimum: 1,
+      },
+      to_address: {
+        type: 'string',
+        description:
+          'Destination address. REQUIRED when the destination chain is in a ' +
+          'different namespace than the source (for example an EVM source and ' +
+          'a Solana destination), because that is a different address derived ' +
+          'from the same wallet.',
       },
       from_asset_symbol: {
         type: 'string',
@@ -210,13 +231,11 @@ const DEFI_CROSS_CHAIN_DEPOSIT: ToolMeta = {
         description: 'Optional risk-tier hint for the destination opportunity.',
       },
     },
-    required: [
-      'protocol_slug',
-      'from_chain_id',
-      'to_chain_id',
-      'from_asset_symbol',
-      'amount_raw',
-    ],
+    // `from_chain_id` / `to_chain_id` are no longer required: the source
+    // may arrive as CAIP-2 `from_chain` (or fall back to the active
+    // chain), and the destination is derived from `protocol_slug`.
+    // Relaxing rather than removing keeps every existing caller valid.
+    required: ['protocol_slug', 'from_asset_symbol', 'amount_raw'],
     additionalProperties: false,
   },
 }
