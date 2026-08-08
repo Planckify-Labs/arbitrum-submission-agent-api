@@ -20,7 +20,8 @@ export const defiCard: AgentCard = {
   display_name: 'DeFi specialist',
   description:
     'Owns yield strategies, opportunity discovery, rebalances, position reads, ' +
-    'and cross-chain transfers.',
+    'and BRIDGING assets across chains (quote, execute, status) — including ' +
+    'when the request names a destination wallet or address.',
   tool_prefixes: ['defi_', 'bridge_'],
   capabilities: [
     'yield_discovery',

@@ -97,10 +97,13 @@ const BRIDGE_QUOTE: ToolMeta = {
       to_address: {
         type: 'string',
         description:
-          'Optional destination address. Omit for a same-namespace bridge and the ' +
-          "executor uses the user's own address on that chain. REQUIRED when the " +
-          'destination is a different namespace (for example Base to Solana), ' +
-          'because that is a different address derived from the same wallet.',
+          'Optional. OMIT IT unless the user actually named an address. The ' +
+          "device resolves the user's own wallet on the destination chain — " +
+          'including cross-namespace, where Base to Solana lands on a ' +
+          'different address derived from the same seed — and the quote card ' +
+          'shows which wallet it picked, with a control to change it. NEVER ' +
+          'ask the user to type or paste their own address: they are on the ' +
+          'device that already holds it, and the card is where they confirm it.',
       },
     },
     required: ['from_chain', 'to_chain', 'from_asset', 'to_asset', 'amount_raw'],
@@ -136,8 +139,10 @@ const BRIDGE_EXECUTE: ToolMeta = {
       to_address: {
         type: 'string',
         description:
-          'Optional destination address. Required for a cross-namespace bridge. ' +
-          'Must match the address shown on the quote the user approved.',
+          'Optional. Pass the destination address FROM THE QUOTE the user just ' +
+          'saw (its `to.address`) so this executes against what was on screen. ' +
+          'Omit it if you do not have one; the device resolves the same wallet ' +
+          'it showed. Never ask the user to supply it.',
       },
       min_receive_raw: {
         type: 'string',

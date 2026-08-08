@@ -31,7 +31,7 @@ const CORE_HANDOFF: ToolMeta = {
   executor: 'server',
   capability: 'read',
   description:
-    'Delegate the NEXT step of this turn to a specialist that will do the work and reply to the user. Use this whenever the request needs real wallet or DeFi work — you (Core) have NO execution tools of your own, so delegating is how anything gets done. Choose "defi" for swaps / yield / supply / withdraw, "wallet" for balances, transfers, approvals, address book, points, and redemptions. The specialist runs the needed tools and narrates that step; you are then re-entered so you can delegate a further step (possibly to a different specialist) or end the turn. Delegate ONE specialist per call.',
+    'Delegate the NEXT step of this turn to a specialist that will do the work and reply to the user. Use this whenever the request needs real wallet or DeFi work — you (Core) have NO execution tools of your own, so delegating is how anything gets done. Choose "defi" for swaps / yield / supply / withdraw AND for every bridge / cross-chain move (quote, execute, or status); "wallet" for balances, transfers, approvals, address book, points, and redemptions. A bridge that names a destination wallet or address is still "defi" — the address is a parameter of the bridge, not wallet work. The specialist runs the needed tools and narrates that step; you are then re-entered so you can delegate a further step (possibly to a different specialist) or end the turn. Delegate ONE specialist per call.',
   inputSchema: {
     type: 'object',
     properties: {
