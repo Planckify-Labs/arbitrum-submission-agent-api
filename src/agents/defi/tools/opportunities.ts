@@ -18,7 +18,7 @@ const DEFI_LIST_OPPORTUNITIES: ToolMeta = {
   executor: 'mobile',
   capability: 'read',
   description:
-    'List DeFi yield opportunities across every supported chain (EVM, Solana, AND Sui), filtered by tier, chain, namespace, asset, or liquidity profile. Use for "show me where I can park USDC", "what conservative options are on Base", or "earn yield on my Sui USDC". ALWAYS call this for any "earn yield"/"where can I park X" goal — it is the single source for venue choice; pick the best row within the user\'s tier and route by its `namespace` (do NOT make the user name a protocol). Each row carries `namespace`, `chain_id`, and `protocol_slug` (the venue id used by the deposit / Sui-intent tools).',
+    'List DeFi yield opportunities, filtered by tier, chain, namespace, asset, or liquidity profile. Use for "show me where I can park USDC", "what conservative options are on Base", or "earn yield on my Sui USDC". ALWAYS call this for any "earn yield"/"where can I park X" goal — it is the single source for venue choice; pick the best row within the user\'s tier and route by its `namespace` (do NOT make the user name a protocol). Each row carries `namespace`, `chain_id`, and `protocol_slug` (the venue id used by the deposit / Sui-intent tools). Call it EXACTLY ONCE per goal. Omitting `namespace` and `chain_id` scopes the list to the wallet\'s EXACT active chain (on Base that is Base, not every EVM chain), which the device ENFORCES: a namespace you pick yourself is ignored, so probing other chains is wasted. An empty result means "nothing on this chain", not "nothing anywhere" — do not retry it elsewhere. The result reports the scope it used in `chain_scope`.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -33,14 +33,14 @@ const DEFI_LIST_OPPORTUNITIES: ToolMeta = {
       },
       namespace: {
         type: 'string',
-        enum: ['eip155', 'solana', 'sui'],
+        enum: ['eip155', 'solana', 'sui', 'stellar', 'all'],
         description:
-          'Optional chain-namespace filter. Use "sui" to surface Sui yield venues (their rows are chain_id 0, so filter by namespace, not chain_id), "eip155" for EVM, "solana" for Solana.',
+          'Chain-namespace filter. OMIT IT: the default is the wallet\'s active chain, the only chain the user can deposit from without switching or bridging. A namespace you choose on your own is IGNORED by the device and replaced with the active chain, so do not use this to probe other chains. Set "all" ONLY when the user explicitly asked to see every chain; name a single namespace ("sui", "eip155", "solana", "stellar") only when the user named that chain themselves. Never issue several calls with different namespaces to assemble a cross-chain list — use "all" once instead.',
       },
       chain_id: {
         type: 'integer',
         description:
-          'Optional EVM chain id filter (e.g. 8453 for Base). For non-EVM, filter by `namespace` instead — Sui/Solana rows are chain_id 0.',
+          'EVM chain id (e.g. 8453 for Base). OMIT IT: the wallet\'s active chain is applied automatically. Set it ONLY when the user named a DIFFERENT EVM chain than the one they are on; it overrides the active-chain scope. For non-EVM, filter by `namespace` instead — Sui/Solana/Stellar rows are chain_id 0.',
         minimum: 0,
       },
       liquidity_profile: {
