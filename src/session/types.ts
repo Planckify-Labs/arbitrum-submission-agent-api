@@ -45,6 +45,19 @@ export interface WalletContext {
    * mobile clients — treated as `false` when absent.
    */
   points_authenticated?: boolean
+  /**
+   * Every namespace the device holds a wallet on, versus `namespace`
+   * above which names only the ACTIVE one.
+   *
+   * A seed phrase derives a wallet on all four chains; a private-key
+   * import covers exactly one. Without this distinction the model
+   * treated all users as the former and proposed Sui deposits and
+   * Solana bridges to people holding a single EVM key.
+   *
+   * Optional on the wire — absent means "unknown", which must not be
+   * rendered as "owns nothing".
+   */
+  owned_namespaces?: Array<'eip155' | 'solana' | 'sui' | 'stellar'>
 }
 
 /**

@@ -67,6 +67,21 @@ const STELLAR_TOOL_NAMES: ReadonlySet<string> = new Set(
 /**
  * The namespace a tool belongs to, or `undefined` when it is
  * namespace-agnostic (available on every namespace).
+ *
+ * `bridge_*` and `defi_*` deliberately classify as agnostic, and that is
+ * NOT an oversight to be tidied up later. They are the tools that take a
+ * chain as an ARGUMENT (`from_chain` / `to_chain`, a pool's namespace)
+ * rather than inheriting one from the active wallet — a bridge is
+ * cross-chain by definition. Binding them to a single namespace here
+ * would hide bridging from every turn whose active chain didn't happen
+ * to match, which removes the feature instead of scoping it.
+ *
+ * Their real constraint is "the user must hold a wallet on the chain
+ * named in the argument", which is a fact about arguments, not about
+ * which tools exist. That is enforced in two places: the model is told
+ * the inventory up front (`owned_namespaces` → "Wallets available on"
+ * in `buildWalletContextPrompt`), and the device fails closed with a
+ * curated `no_wallet_on_destination_chain` if it proposes one anyway.
  */
 export function namespaceOfTool(name: string): ChainNamespace | undefined {
   if (STELLAR_TOOL_NAMES.has(name)) return 'stellar';

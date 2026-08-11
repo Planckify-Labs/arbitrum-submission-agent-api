@@ -102,8 +102,12 @@ const BRIDGE_QUOTE: ToolMeta = {
           'including cross-namespace, where Base to Solana lands on a ' +
           'different address derived from the same seed — and the quote card ' +
           'shows which wallet it picked, with a control to change it. NEVER ' +
-          'ask the user to type or paste their own address: they are on the ' +
-          'device that already holds it, and the card is where they confirm it.',
+          'ask the user to type or paste their own address: the card is where ' +
+          'they confirm it. This resolution only works for a chain the user ' +
+          'actually holds a wallet on (see "Wallets available on" in the ' +
+          'Connected Wallet context) — a private-key user has just one ' +
+          'namespace. Do not work around a missing destination wallet by ' +
+          'asking for an address; there is nothing for them to paste.',
       },
     },
     required: ['from_chain', 'to_chain', 'from_asset', 'to_asset', 'amount_raw'],

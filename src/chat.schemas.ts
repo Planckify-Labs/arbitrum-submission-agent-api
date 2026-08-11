@@ -31,6 +31,19 @@ export const walletContextSchema = z.object({
   // points-service JWT for this wallet. Optional for backwards
   // compatibility with pre-v1.1 mobile clients.
   points_authenticated: z.boolean().optional(),
+  // Every namespace the device holds a wallet on, as opposed to
+  // `namespace` above which is only the ACTIVE one. A seed phrase
+  // derives all four but a private-key import covers exactly one, so
+  // without this the model cannot tell the difference and will propose
+  // actions on chains the user has no key for.
+  //
+  // Declared explicitly rather than leaning on forward-compat: zod
+  // strips unknown keys, so an undeclared field would be dropped before
+  // it ever reached the prompt. Optional, because older clients don't
+  // send it and "unknown" must not be read as "owns nothing".
+  owned_namespaces: z
+    .array(z.enum(['eip155', 'solana', 'sui', 'stellar']))
+    .optional(),
 })
 
 /**

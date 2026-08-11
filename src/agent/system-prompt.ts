@@ -24,6 +24,13 @@ export interface WalletContext {
    * `false` when absent. See protocol_v1.1.md §13.
    */
   points_authenticated?: boolean;
+  /**
+   * Every namespace the device holds a wallet on, versus `namespace`
+   * above which names only the ACTIVE one. A seed phrase derives all
+   * four; a private-key import covers exactly one. Optional — absent
+   * means unknown, not "owns nothing".
+   */
+  owned_namespaces?: Array<"eip155" | "solana" | "sui" | "stellar">;
 }
 
 export const AGENT_SYSTEM_PROMPT = `## Agent Rules
@@ -140,11 +147,24 @@ export function buildWalletContextPrompt(ctx: WalletContext): string {
       ? `Active chain: ${ctx.chain_name} (${ctx.chain_symbol}, chain_id: ${ctx.chain_id})`
       : `Active chain: ${ctx.chain_name} (${ctx.chain_symbol}, namespace: ${namespace})`;
 
+  // What the user can actually reach, which is NOT implied by the active
+  // chain. A seed phrase derives a wallet on every namespace, but a
+  // private-key import covers exactly one — and nothing else in this
+  // prompt distinguishes the two, so the model proposed Sui deposits and
+  // Solana bridges to people holding a single EVM key and only found out
+  // when the device refused. Absent (older clients) means unknown: stay
+  // silent rather than asserting either way.
+  const owned = ctx.owned_namespaces ?? [];
+  const ownedLine =
+    owned.length > 0
+      ? `Wallets available on: ${owned.join(', ')}. The user has NO wallet on any other namespace — do not propose actions there. Suggest a chain from this list, or say they would need to add a wallet for that chain first.`
+      : '';
+
   return `
 ## Connected Wallet
 Address: ${ctx.address}${ctx.label ? ` (${ctx.label})` : ''}
 ${chainLine}
-${authLine}
+${authLine}${ownedLine ? `\n${ownedLine}` : ''}
 
 All onchain actions are executed by the mobile app.
 You have no access to the private key or seed phrase — never ask for them.
