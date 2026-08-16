@@ -247,9 +247,17 @@ export function buildHumanSummary(
       return `Deposit ${amount} ${asset} into ${slug}`
     }
     case 'defi_withdraw': {
+      // protocol_slug/asset_symbol are optional display hints (propose.ts) —
+      // use them when the caller supplied them so this fallback names the
+      // protocol/asset instead of a bare position id; mobile's own
+      // facts-first card is the primary surface, this string is the
+      // last-resort fallback.
       const amount = str(input, 'amount_raw')
+      const asset = str(input, 'asset_symbol', '')
+      const slug = str(input, 'protocol_slug', '')
       const position = str(input, 'position_id')
-      return `Withdraw ${amount} from position ${position}`
+      const venue = asset && slug ? `${asset} from ${slug}` : `from position ${position}`
+      return `Withdraw ${amount} ${venue}`
     }
     case 'defi_rebalance': {
       const position = str(input, 'from_position_id')

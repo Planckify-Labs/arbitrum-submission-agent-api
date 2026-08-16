@@ -84,7 +84,16 @@ const DEFI_WITHDRAW: ToolMeta = {
   category: 'utility',
   executor: 'mobile',
   capability: 'write',
-  description: 'Withdraw partially or fully from a DeFi position.',
+  description:
+    'Withdraw partially or fully from a DeFi position (EVM positions only — ' +
+    'see systemPrompt for the Sui intent-engine withdraw path). The executor ' +
+    'resolves the adapter from `position_id` alone, so the fields below are ' +
+    'OPTIONAL display hints only — they never change which position is ' +
+    'withdrawn. ALWAYS pass them anyway when calling this tool: copy ' +
+    'protocol_slug/chain_id/asset_symbol/amount_usd straight off the matching ' +
+    'row in the most recent `defi_list_positions` result. Without them the ' +
+    'approval card cannot tell the user what protocol, chain, or asset they ' +
+    'are withdrawing from — it would show a bare, contextless approval prompt.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -98,6 +107,27 @@ const DEFI_WITHDRAW: ToolMeta = {
         pattern: '^[0-9]+$',
         description:
           "Decimal-string amount in the position asset's smallest unit. Use the position's full balance for a full exit.",
+      },
+      protocol_slug: {
+        type: 'string',
+        description:
+          'Display hint: the position\'s `protocol_slug` from `defi_list_positions`, e.g. "compound-v3-arbitrum". Not used for routing.',
+      },
+      chain_id: {
+        type: 'integer',
+        description:
+          "Display hint: the position's EVM `chain_id` from `defi_list_positions`. Not used for routing.",
+        minimum: 1,
+      },
+      asset_symbol: {
+        type: 'string',
+        description:
+          'Display hint: the position\'s `asset_symbol` from `defi_list_positions`, e.g. "USDT". Not used for routing.',
+      },
+      amount_usd: {
+        type: 'number',
+        description:
+          "Display hint: the withdrawal amount's approximate USD value, derived from the position's current $ value in `defi_list_positions`. Not used for routing.",
       },
     },
     required: ['position_id', 'amount_raw'],
