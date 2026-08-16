@@ -1,4 +1,5 @@
 import { BRIDGE_TOOLS } from './tools/bridge'
+import { DEFI_OPPORTUNITY_TOOLS } from './tools/opportunities'
 import { DEFI_SYSTEM_PROMPT } from './systemPrompt'
 
 /**
@@ -81,5 +82,32 @@ describe('agents/defi systemPrompt — bridge destination resolution', () => {
         'to_address',
       )
     }
+  })
+})
+
+/**
+ * Regression guard for the "what's mine on Compound?" incident: the agent
+ * had `defi_list_positions` available but never called it for a "what's
+ * mine" question, so it improvised an answer from raw wallet-token
+ * balances and missed the position entirely (Compound III's cUSDT receipt
+ * token isn't in the wallet's default token list). Both the tool
+ * description and the system prompt now say explicitly when to call it.
+ */
+describe('agents/defi systemPrompt — position-check routing', () => {
+  it('tells the model to call defi_list_positions for "what\'s mine" questions', () => {
+    expect(DEFI_SYSTEM_PROMPT).toContain('Checking positions')
+    expect(DEFI_SYSTEM_PROMPT).toMatch(/what's mine/i)
+    expect(DEFI_SYSTEM_PROMPT).toContain('defi_list_positions')
+  })
+
+  it('forbids answering a position question from a wallet-balance tool', () => {
+    expect(DEFI_SYSTEM_PROMPT).toMatch(/NEVER answer from a wallet-balance/i)
+  })
+
+  it('keeps the tool description consistent with the prompt', () => {
+    const description = DEFI_OPPORTUNITY_TOOLS.defi_list_positions?.description
+    expect(description).toBeDefined()
+    expect(description).toMatch(/what's mine/i)
+    expect(description).toMatch(/ALWAYS call this/i)
   })
 })

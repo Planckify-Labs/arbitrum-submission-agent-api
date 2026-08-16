@@ -64,7 +64,7 @@ const DEFI_LIST_POSITIONS: ToolMeta = {
   executor: 'mobile',
   capability: 'read',
   description:
-    "List the connected wallet's open DeFi positions.",
+    'List the connected wallet\'s open DeFi positions — protocol, chain, asset, live on-chain value, PnL, and the position\'s current APY. ALWAYS call this for "what\'s mine on X", "show my positions", "how much do I have on Compound/Aave/etc.", "what am I earning", "check my DeFi holdings", or any question about the user\'s existing deposits. Do NOT try to answer these from a wallet-balance/token-list tool — a protocol receipt token (cUSDT, aUSDC, a vault share, …) is not something the wallet\'s default token list resolves, so that path silently misses the position and produces a wrong or confused answer. The result renders as a card that already shows $ value, PnL%, and APY per row — do not re-tabulate it in prose; one short sentence at most. Also call this before routing a withdraw (see below).',
   inputSchema: {
     type: 'object',
     properties: {},

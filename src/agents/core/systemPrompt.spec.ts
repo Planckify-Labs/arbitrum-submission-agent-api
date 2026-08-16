@@ -75,3 +75,52 @@ describe('agents/core systemPrompt — bridge routing', () => {
     expect(prompt).toContain(defiCard.description)
   })
 })
+
+/**
+ * Regression guard for the "show my defi position" mis-routing incident.
+ *
+ * Same class of bug as the bridge incident above, one layer up: Core's own
+ * routing vocabulary listed DeFi triggers as action-only ("swap", "earn
+ * yield", "supply"/"withdraw") and separately bucketed "balance / token"
+ * requests into "wallet" with nothing excluding a DeFi position check from
+ * that bucket. "Show my defi position" / "what's mine on Compound" reads
+ * exactly like a balance question, so the SAME message routed
+ * inconsistently turn to turn — sometimes correctly to "defi"
+ * (`defi_list_positions`, which shows the real position with value/PnL/
+ * APY), sometimes to "wallet", which has no such tool and told the user
+ * "I don't have access to a tool that can scan and display your full DeFi
+ * positions ... use DeBank, Zapper" — the exact same class of "tell the
+ * user to go use a competitor" failure as the bridge incident, for a
+ * capability the app ships.
+ */
+describe('agents/core systemPrompt — DeFi position-check routing', () => {
+  let prompt: string
+  beforeAll(() => {
+    __resetRegistryForTests()
+    registerAgent(coreCard)
+    registerAgent(walletCard)
+    registerAgent(defiCard)
+    prompt = buildCoreSystemPrompt()
+  })
+
+  it('routes an existing-DeFi-position check to the defi specialist, not wallet', () => {
+    expect(prompt).toMatch(/existing DeFi position/i)
+    expect(prompt).toMatch(/what's mine on/i)
+    // The rule has to name the target, not just the topic.
+    expect(prompt).toMatch(/existing DeFi position[\s\S]{0,400}"defi"/i)
+  })
+
+  it('explicitly excludes a DeFi position check from the wallet balance bucket', () => {
+    expect(prompt).toMatch(/not deposited into a protocol/i)
+  })
+
+  it('explains why it reads like a balance question but is not wallet work', () => {
+    expect(prompt).toMatch(/receipt token/i)
+  })
+
+  it('exposes DeFi position-check routing on the core_handoff tool description too', () => {
+    const handoff = CORE_HANDOFF_TOOLS.core_handoff
+    expect(handoff.description).toMatch(/existing DeFi position/i)
+    expect(handoff.description).toMatch(/receipt token/i)
+  })
+})
