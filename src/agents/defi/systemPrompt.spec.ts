@@ -111,3 +111,106 @@ describe('agents/defi systemPrompt — position-check routing', () => {
     expect(description).toMatch(/ALWAYS call this/i)
   })
 })
+
+/**
+ * Quick Invest Phase 1 (mobile-app docs/defi-quick-invest-spec.md §8).
+ *
+ * `amount_usd` and `tier` were documented purely as filters, so the model
+ * only passed them when it was consciously narrowing a list. The card now
+ * ALSO uses them to decide what it opens showing — a user who said "invest
+ * $750, balanced" and got neither field forwarded lands on the same
+ * generic recommendation as someone who said nothing at all.
+ *
+ * The paired negative assertion matters as much as the positive one: an
+ * `amount_usd` the model invented renders to the user as a pre-filled
+ * deposit amount, which is a financial suggestion this app must not make
+ * on its own.
+ */
+describe('agents/defi systemPrompt — Quick Invest intent forwarding', () => {
+  it('tells the model to forward a stated amount and tier', () => {
+    expect(DEFI_SYSTEM_PROMPT).toMatch(
+      /Pass .?amount_usd.? and .?tier.? WHENEVER the user has stated them/i,
+    )
+    expect(DEFI_SYSTEM_PROMPT).toContain('invest $750, balanced')
+  })
+
+  it('tells the model to infer tier from a goal', () => {
+    expect(DEFI_SYSTEM_PROMPT).toMatch(/emergency fund/i)
+    expect(DEFI_SYSTEM_PROMPT).toMatch(/conservative/i)
+    expect(DEFI_SYSTEM_PROMPT).toMatch(/aggressive/i)
+  })
+
+  it('forbids inventing an amount the user never said', () => {
+    expect(DEFI_SYSTEM_PROMPT).toMatch(
+      /NEVER invent an .?amount_usd.? the user did not say/i,
+    )
+  })
+
+  it('keeps the tool schema consistent with the prompt', () => {
+    const schema = DEFI_OPPORTUNITY_TOOLS.defi_list_opportunities
+      ?.inputSchema as {
+      properties?: Record<string, { description?: string }>
+    }
+    const amount = schema?.properties?.amount_usd?.description
+    const tier = schema?.properties?.tier?.description
+    expect(amount).toMatch(/PASS IT WHENEVER THE USER NAMES A NUMBER/)
+    // The filtering behaviour is real and load-bearing; the rewrite adds a
+    // second use rather than replacing the first.
+    expect(amount).toMatch(/minimum deposit/i)
+    expect(tier).toMatch(/goal/i)
+  })
+})
+
+/**
+ * DCA v1 (mobile-app docs/defi-quick-invest-spec.md §12).
+ *
+ * The single most damaging thing the model could say about this feature is
+ * that it invests automatically. It does not: the server nudges, the user
+ * taps, the user's own key signs. Claiming otherwise would describe a
+ * standing financial authority the app deliberately does not hold (§13 is
+ * unbuilt and needs its own security review), and a user who believed it
+ * would think money was moving when nothing was.
+ */
+describe('agents/defi systemPrompt — recurring investing is a reminder', () => {
+  it('frames DCA as a reminder the user still signs', () => {
+    expect(DEFI_SYSTEM_PROMPT).toContain('defi_set_recurring_invest')
+    expect(DEFI_SYSTEM_PROMPT).toMatch(/REMINDER/)
+    expect(DEFI_SYSTEM_PROMPT).toMatch(/signs? the deposit themselves/i)
+  })
+
+  it('forbids describing it as automatic', () => {
+    expect(DEFI_SYSTEM_PROMPT).toMatch(/NEVER describe it as "automatic"/i)
+    expect(DEFI_SYSTEM_PROMPT).toMatch(/MOVES NO FUNDS TODAY/)
+  })
+
+  it('forbids inventing an amount or a cadence', () => {
+    expect(DEFI_SYSTEM_PROMPT).toMatch(
+      /Do NOT invent an .?amount_usd.? or a .?cadence.?/,
+    )
+  })
+
+  it('requires surfacing a saved-strategy tier override', () => {
+    expect(DEFI_SYSTEM_PROMPT).toContain('defi_list_recurring_invest')
+    expect(DEFI_SYSTEM_PROMPT).toMatch(/Never let that override happen silently/i)
+  })
+})
+
+/**
+ * Regression guard for a contradiction seen on device: the opportunity card
+ * rendered "these sit outside your risk profile, so we haven't built a plan
+ * from them" and the agent, in the same turn, proposed a deposit into one of
+ * exactly those pools. The card refused and the agent routed around it.
+ */
+describe('agents/defi systemPrompt — out-of-tier rows are informational', () => {
+  it('forbids proposing a row flagged outside_tier', () => {
+    expect(DEFI_SYSTEM_PROMPT).toContain('outside_tier')
+    expect(DEFI_SYSTEM_PROMPT).toMatch(/NEVER propose one/i)
+  })
+
+  it('says the same in the tool description', () => {
+    const description =
+      DEFI_OPPORTUNITY_TOOLS.defi_list_opportunities?.description
+    expect(description).toContain('outside_tier')
+    expect(description).toMatch(/NEVER propose a deposit into one/i)
+  })
+})

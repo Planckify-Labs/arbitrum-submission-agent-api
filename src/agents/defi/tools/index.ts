@@ -23,6 +23,7 @@ import { DEFI_INTENT_TOOLS } from './intent'
 import { DEFI_OPPORTUNITY_TOOLS } from './opportunities'
 import { DEFI_PROPOSE_TOOLS } from './propose'
 import { DEFI_CONFIG_TOOLS } from './reads-extra'
+import { DEFI_RECURRING_TOOLS } from './recurring'
 import { DEFI_SIMULATE_TOOLS } from './simulate'
 
 export { DEFI_OPPORTUNITY_TOOLS } from './opportunities'
@@ -31,6 +32,7 @@ export { DEFI_CONFIG_TOOLS } from './reads-extra'
 export { DEFI_SIMULATE_TOOLS } from './simulate'
 export { DEFI_CLAIM_TOOLS } from './claim'
 export { DEFI_INTENT_TOOLS } from './intent'
+export { DEFI_RECURRING_TOOLS } from './recurring'
 export { BRIDGE_TOOLS } from './bridge'
 
 export const DEFI_TOOLS: Record<string, ToolMeta> = {
@@ -40,6 +42,9 @@ export const DEFI_TOOLS: Record<string, ToolMeta> = {
   ...DEFI_PROPOSE_TOOLS,
   ...DEFI_CLAIM_TOOLS,
   ...DEFI_INTENT_TOOLS,
+  // DCA v1 — recurring-invest REMINDERS (quick-invest spec §12.5).
+  // Creates no signing authority: the user still taps and signs each cycle.
+  ...DEFI_RECURRING_TOOLS,
   // General-purpose bridge (bridge-capability-spec §8.3). Owned by the
   // DeFi agent; the `bridge_` prefix is declared on it in the manifest.
   ...BRIDGE_TOOLS,

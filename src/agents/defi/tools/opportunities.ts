@@ -18,14 +18,15 @@ const DEFI_LIST_OPPORTUNITIES: ToolMeta = {
   executor: 'mobile',
   capability: 'read',
   description:
-    'List DeFi yield opportunities, filtered by tier, chain, namespace, asset, or liquidity profile. Use for "show me where I can park USDC", "what conservative options are on Base", or "earn yield on my Sui USDC". ALWAYS call this for any "earn yield"/"where can I park X" goal — it is the single source for venue choice; pick the best row within the user\'s tier and route by its `namespace` (do NOT make the user name a protocol). Each row carries `namespace`, `chain_id`, and `protocol_slug` (the venue id used by the deposit / Sui-intent tools). Call it EXACTLY ONCE per goal. Omitting `namespace` and `chain_id` scopes the list to the wallet\'s EXACT active chain (on Base that is Base, not every EVM chain), which the device ENFORCES: a namespace you pick yourself is ignored, so probing other chains is wasted. An empty result means "nothing on this chain", not "nothing anywhere" — do not retry it elsewhere. The result reports the scope it used in `chain_scope`.',
+    'List DeFi yield opportunities, filtered by tier, chain, namespace, asset, or liquidity profile. Use for "show me where I can park USDC", "what conservative options are on Base", or "earn yield on my Sui USDC". ALWAYS call this for any "earn yield"/"where can I park X" goal — it is the single source for venue choice; pick the best row within the user\'s tier and route by its `namespace` (do NOT make the user name a protocol). Each row carries `namespace`, `chain_id`, and `protocol_slug` (the venue id used by the deposit / Sui-intent tools). Call it EXACTLY ONCE per goal. Omitting `namespace` and `chain_id` scopes the list to the wallet\'s EXACT active chain (on Base that is Base, not every EVM chain), which the device ENFORCES: a namespace you pick yourself is ignored, so probing other chains is wasted. An empty result means "nothing on this chain", not "nothing anywhere" — do not retry it elsewhere. The result reports the scope it used in `chain_scope`. A row flagged `outside_tier: true` is RISKIER than the user\'s saved risk profile and is returned only so you can tell them such options exist — NEVER propose a deposit into one, and never treat it as your pick. Say plainly that it sits above their profile and that they can view it or change their risk level.',
   inputSchema: {
     type: 'object',
     properties: {
       tier: {
         type: 'string',
         enum: ['conservative', 'balanced', 'aggressive'],
-        description: 'Risk tier filter.',
+        description:
+          'Risk tier. Pass it whenever the user states or clearly implies a risk appetite, including through a goal ("emergency fund" / "rainy-day money" → conservative; "grow it" / "best returns" → aggressive) — not only when they use the word "conservative". The card pre-sets its risk dial from this, so a goal you understood but did not pass makes the user re-state it by hand.',
       },
       asset_symbol: {
         type: 'string',
@@ -50,7 +51,8 @@ const DEFI_LIST_OPPORTUNITIES: ToolMeta = {
       },
       amount_usd: {
         type: 'number',
-        description: 'Optional minimum-deposit filter, in USD.',
+        description:
+          'The amount (USD) the user wants to invest, if they said one. PASS IT WHENEVER THE USER NAMES A NUMBER, not only when you mean to filter: the card uses it to open pre-filled on a ready allocation the user can confirm in one tap, instead of an empty form. It ALSO still filters out pools whose minimum deposit exceeds it, which is the same thing the user wants either way. Omit it only when the user named no amount at all.',
       },
     },
     required: [],

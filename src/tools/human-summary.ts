@@ -278,6 +278,20 @@ export function buildHumanSummary(
       const slug = str(input, 'protocol_slug')
       return `Bridge ${amount} ${asset} from chain ${fromChain} → ${toChain} and deposit into ${slug}`
     }
+    case 'defi_set_recurring_invest': {
+      // Fallback copy only — mobile's facts-first `approvalSummary.ts`
+      // renders the real approval text from the tool args
+      // (`project_facts_first_approval_summary`). Says "remind" rather than
+      // "invest" on purpose: setting up a plan moves no funds today.
+      const raw = input.amount_usd
+      const amount = typeof raw === 'number' && Number.isFinite(raw) ? raw : '?'
+      const cadence = str(input, 'cadence')
+      const tier = str(input, 'tier')
+      const asset = str(input, 'asset_symbol', '')
+      return `Set up a ${cadence} reminder to invest $${amount}${
+        asset ? ` of ${asset}` : ''
+      } into a ${tier} mix`
+    }
     case 'defi_compound': {
       const position = str(input, 'position_id')
       return `Claim rewards on position ${position} and redeposit`

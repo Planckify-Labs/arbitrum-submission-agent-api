@@ -68,6 +68,11 @@ export const CARD_BACKED_TOOL_NAMES: ReadonlySet<string> = new Set([
   'defi_rebalance',
   'defi_intent_preview',
   'defi_intent_execute',
+  // DCA v1 (quick-invest spec §12.5). The set-up card renders the
+  // WriteApprovalGate and states amount/cadence/tier/chain; the list card
+  // shows every plan with its next date and any tier override.
+  'defi_set_recurring_invest',
+  'defi_list_recurring_invest',
   // Bridge (bridge-capability-spec §7). The quote card carries the full
   // disclosure surface (minimum received, itemised fees, destination
   // address, readiness blockers) and the progress card walks the
