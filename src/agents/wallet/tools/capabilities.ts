@@ -94,6 +94,37 @@ export const WALLET_CAPABILITY_TOOLS: Record<string, ToolMeta> = composeAgentToo
       },
     },
 
+    get_wallet_nfts: {
+      name: 'get_wallet_nfts',
+      category: 'blockchain_read',
+      executor: 'mobile',
+      capability: 'read',
+      description:
+        "List the NFTs / collectibles the connected wallet holds on its " +
+        'active chain. Takes NO required input. Each row carries the ' +
+        'collection name, item name, token id, contract address and (when ' +
+        'known) the collection floor price. Use this for "what NFTs do I ' +
+        'own", "show my collectibles", or to check whether the wallet holds ' +
+        'something from a named collection. NFT data comes from an indexer, ' +
+        'not a direct chain read, so a wallet that was just created may ' +
+        'briefly return nothing while indexing finishes — if the result is ' +
+        'empty, say no collectibles were found rather than asserting the ' +
+        'wallet owns none. Only offered on EVM wallets: collectibles are not ' +
+        'supported on Solana, Sui or Stellar yet.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          limit: {
+            type: 'number',
+            description:
+              'Maximum number of items to return (default 20, max 50).',
+          },
+        },
+        required: [],
+        additionalProperties: false,
+      },
+    },
+
     send_native: {
       name: 'send_native',
       category: 'blockchain_write',

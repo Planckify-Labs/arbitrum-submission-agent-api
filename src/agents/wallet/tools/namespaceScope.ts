@@ -52,6 +52,9 @@ const EVM_ONLY_TOOL_NAMES: ReadonlySet<string> = new Set([
   'transfer_erc20',
   'approve_erc20',
   'write_contract',
+  // Collectibles come from an indexer that only covers EVM chains today, so
+  // the tool is scoped out rather than offered and then refused at runtime.
+  'get_wallet_nfts',
 ]);
 
 const SOLANA_TOOL_NAMES: ReadonlySet<string> = new Set(
