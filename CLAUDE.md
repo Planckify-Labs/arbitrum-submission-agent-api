@@ -76,6 +76,8 @@ The MCP stdio subprocess is retained as a bare diagnostic template per protocol 
 ```
 KIMI_K2_API_KEY             # Required - Kimi K2 API key (agent model)
 CHAT_API_KEY                # Required - API key for /chat endpoint
+DEEPGRAM_API_KEY            # Required - Deepgram key for /chat/transcribe (Nova-3)
+DEEPGRAM_LANGUAGE           # Optional - Nova-3 language, default `multi` (code-switching); e.g. `id`
 MCP_COMMAND                 # Optional - Override MCP subprocess command (default: node)
 MCP_ARGS                    # Optional - Override MCP subprocess args (default: dist/mcp/server.js)
 ```

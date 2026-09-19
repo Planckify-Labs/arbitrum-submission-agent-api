@@ -1,13 +1,22 @@
+import { setDefaultAutoSelectFamilyAttemptTimeout } from 'node:net'
 import { NestFactory } from '@nestjs/core'
 import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify'
-import { AppModule } from './app.module'
 import { loadAgentCards } from './agents/loadAgentCards'
 import { assertRegistryInvariants } from './agents/registry'
+import { AppModule } from './app.module'
 import { TOOL_REGISTRY } from './tools/registry'
 import { enabledResources } from './x402/catalog'
+
+// Node 22's Happy-Eyeballs per-address connect attempt defaults to 250ms
+// (Node 26: 500ms). A bare TCP handshake to Deepgram's US edge takes
+// 300–450ms from SE Asia, so every /chat/transcribe upstream call died
+// with `fetch failed` → AggregateError(ETIMEDOUT, ENETUNREACH) before the
+// socket ever opened. Give each address attempt a realistic budget; the
+// overall call is still bounded by each fetch's own AbortSignal.
+setDefaultAutoSelectFamilyAttemptTimeout(2_000)
 
 async function bootstrap() {
   // Multi-agent registry boot — fail loud if cards / manifest / tool
@@ -18,10 +27,12 @@ async function bootstrap() {
   assertRegistryInvariants(Object.keys(TOOL_REGISTRY))
 
   // Mandatory API Key checks
-  const requiredKeys = ['KIMI_K2_API_KEY', 'CHAT_API_KEY', 'STT_AI_API_KEY']
+  const requiredKeys = ['KIMI_K2_API_KEY', 'CHAT_API_KEY', 'DEEPGRAM_API_KEY']
   for (const key of requiredKeys) {
     if (!process.env[key]) {
-      throw new Error(`${key} is not set. This API key is required for the agent to function.`)
+      throw new Error(
+        `${key} is not set. This API key is required for the agent to function.`,
+      )
     }
   }
 
@@ -37,10 +48,10 @@ async function bootstrap() {
     fastifyAdapter,
   )
 
-  // Buffer raw multipart bodies so /chat/transcribe can forward them
-  // verbatim to stt.ai without parsing. The 25MB cap covers ~30min of
-  // typical voice-memo audio while keeping a hard ceiling well below
-  // stt.ai's own 100MB anonymous-tier limit.
+  // Buffer raw multipart bodies so /chat/transcribe can unwrap the
+  // audio part and forward its bytes to Deepgram. The 25MB cap covers
+  // ~30min of typical voice-memo audio while keeping a hard ceiling far
+  // below Deepgram's 2GB pre-recorded limit.
   app
     .getHttpAdapter()
     .getInstance()
