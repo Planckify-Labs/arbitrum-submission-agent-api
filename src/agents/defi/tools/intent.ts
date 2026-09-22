@@ -37,7 +37,7 @@ const DEFI_INTENT_PREVIEW: ToolMeta = {
     "to be in the user's wallet, balances, or token list — the DEX defines its " +
     'pool\'s coins and THIS tool resolves it. NEVER refuse a swap, and never ' +
     'pre-check the output token with get_native_balance/get_wallet_assets ' +
-    '— ALWAYS call this tool for a swap goal and only report a token as ' +
+    '— ALWAYS call this tool for a swap goal ON SUI and only report a token as ' +
     'unsupported if THIS tool returns an error (e.g. unsupported_pair / ' +
     'no_swap_route). supply/withdraw to a Sui lending venue is mainnet-only; ' +
     'on testnet offer a swap (DeepBook) instead. Pick the venue from ' +
@@ -45,7 +45,8 @@ const DEFI_INTENT_PREVIEW: ToolMeta = {
     'require the user to name it and do NOT hardcode any one protocol. Use ' +
     'action "swap_and_supply" for a one-step "swap X to Y then earn yield on ' +
     'Y" goal — it compiles the swap and the supply into ONE atomic PTB ' +
-    '(mainnet-only, like supply).',
+    '(mainnet-only, like supply). Sui ONLY: a swap on Arc goes through ' +
+    'bridge_quote with the same Arc chain as from_chain and to_chain.',
   inputSchema: {
     type: 'object',
     properties: {

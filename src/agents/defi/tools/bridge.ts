@@ -78,7 +78,9 @@ const BRIDGE_QUOTE: ToolMeta = {
     'address, and any destination preconditions the user must clear first. Always quote ' +
     'before bridge_execute so the user sees the numbers. The result renders as a card: do ' +
     'not restate its figures in prose. If it returns routable:false, that is a capability ' +
-    'boundary, not a failure, so explain plainly that the pair cannot be routed.',
+    'boundary, not a failure, so explain plainly that the pair cannot be routed. ' +
+    'Also quotes a SAME-CHAIN SWAP on Arc: pass the same Arc chain (eip155:5042 or ' +
+    'eip155:5042002) as from_chain and to_chain, with the two Arc token ids.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -125,7 +127,8 @@ const BRIDGE_EXECUTE: ToolMeta = {
     'bridge_quote and re-prices it at signing time, so a quote the user read minutes ' +
     'ago is never submitted stale. Pass min_receive_raw from the quote the user actually ' +
     'saw so the transfer is refused if the guaranteed amount has dropped below it. ' +
-    'A bridge is not finished when this returns: poll bridge_status.',
+    'A bridge is not finished when this returns: poll bridge_status. For a same-chain ' +
+    'Arc swap, pass the same Arc chain as from_chain and to_chain, exactly as quoted.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -183,7 +186,8 @@ const BRIDGE_STATUS: ToolMeta = {
     'in a DIFFERENT token, and refunded means the funds went back to the source chain. ' +
     'Neither is a success and neither is an error: name the token actually received, or ' +
     'the chain the refund landed on. Waiting for confirmation can take 15 to 20 minutes ' +
-    'on a standard transfer, which is normal and not a fault.',
+    'on a standard transfer, which is normal and not a fault. A same-chain Arc swap ' +
+    'settles within seconds.',
   inputSchema: {
     type: 'object',
     properties: {
