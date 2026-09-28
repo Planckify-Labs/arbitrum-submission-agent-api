@@ -315,6 +315,10 @@ export function buildHumanSummary(
     }
     case 'bridge_status':
       return 'Check the progress of a bridge transfer'
+    case 'bridge_claim': {
+      const toChain = str(input, 'to_chain')
+      return `Receive bridged funds on ${toChain}`
+    }
     case 'bridge_get_support':
       return 'Check which chains can be bridged between'
 

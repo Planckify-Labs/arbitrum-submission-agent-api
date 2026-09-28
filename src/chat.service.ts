@@ -36,7 +36,12 @@ import {
 } from './agents/engine'
 import { StreamSanitizer, stripMachineryLeak } from './agents/leakFilter'
 import { scopeToolsForModel } from './agents/wallet/tools/namespaceScope'
-import { resolveModel } from './agents/models'
+import { effortProfile, type EffortLevel } from './agents/effort'
+import {
+  type EffortProviderOptions,
+  providerOptionsFor,
+  resolveModel,
+} from './agents/models'
 import { orchestrate } from './agents/orchestrator'
 import {
   type AgentEvent,
@@ -60,6 +65,15 @@ import {
   type ToolMeta,
 } from './tools/registry'
 import { enabledResourceIds, resolveResourceRequest } from './x402/catalog'
+import { type Skill, skillsForAgent } from './skills/loader'
+import {
+  buildSkillsSection,
+  LOAD_SKILL_DESCRIPTION,
+  LOAD_SKILL_INPUT_SCHEMA,
+  LOAD_SKILL_TOOL_NAME,
+  loadSkillResult,
+  skillMode,
+} from './skills/prompt'
 
 /**
  * Signature the agent loop needs from the language model. The real path
@@ -85,6 +99,8 @@ export type ModelRunner = (params: {
   messages: ModelMessage[]
   tools: ToolSet
   system: string
+  /** Native per-agent effort (Claude); undefined on models without one. */
+  providerOptions?: EffortProviderOptions
 }) => StreamTextCall
 
 /**
@@ -99,6 +115,52 @@ export interface AgentTurnConfig {
   llmTools: ToolSet
   /** The resolved model this agent runs on. */
   model: LanguageModel
+  /** Harness loop budget for this turn (see `agents/effort.ts`). */
+  effort?: EffortLevel
+  /** Native effort for the model, from `providerOptionsFor`. */
+  providerOptions?: EffortProviderOptions
+  /** Skills `load_skill` may return this turn (catalog mode). */
+  skills?: readonly Skill[]
+}
+
+/**
+ * An agent's full system prompt. Pure, so the agent eval
+ * (`scripts/eval-agents.ts`) runs the exact prompt production sends.
+ *
+ * Order is load-bearing for cost: providers (Kimi automatically, Claude
+ * with cache_control) cache the longest byte-identical PREFIX of a request.
+ * Everything static per agent comes first — rules, card rule, skills — so
+ * that prefix is shared by every user and every step. The per-user wallet
+ * header and the per-turn brief come last; placed first (as they used to
+ * be) they made every user's prompt diverge from the first line.
+ */
+export function composeAgentSystem(
+  walletContext: Session['wallet_context'],
+  config: AgentRuntimeConfig,
+  brief?: string,
+): string {
+  const header = buildWalletContextPrompt(walletContext)
+  const briefNote = brief
+    ? `\n\n## This turn — do ONLY this\n${brief}\nEvery other part of the user's message is handled separately, invisibly to the user. Never mention it, decline it, or say you can't do it (no "I can't swap", no "use another app"). Do this step, then stop.`
+    : ''
+  const cardRule = buildCardBackedToolRule(config.tools)
+  const skills = buildSkillsSection(skillsForAgent(config.id, config.skills))
+  const skillsNote = skills ? `\n\n${skills}` : ''
+  return `${config.buildSystemPrompt()}${cardRule}${skillsNote}\n\n${header}${briefNote}`
+}
+
+/** Text of the most recent user message (string or text parts), or ''. */
+export function lastUserText(messages: readonly ModelMessage[]): string {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i]
+    if (m.role !== 'user') continue
+    if (typeof m.content === 'string') return m.content
+    return m.content
+      .map((part) => (part.type === 'text' ? part.text : ''))
+      .join(' ')
+      .trim()
+  }
+  return ''
 }
 
 /** Pull the `question` string out of a `core_clarify` tool input. */
@@ -135,12 +197,14 @@ const DEFAULT_MODEL_RUNNER: ModelRunner = ({
   messages,
   tools,
   system,
+  providerOptions,
 }) =>
   streamText({
     model,
     messages,
     tools,
     system,
+    ...(providerOptions ? { providerOptions } : {}),
     maxOutputTokens: MAX_OUTPUT_TOKENS,
     maxRetries: 2,
     // The AI SDK otherwise collapses provider/stream failures into a
@@ -444,10 +508,12 @@ export class ChatService implements OrchestratorEngine {
     session.state = 'streaming'
 
     // Hard cap on loop iterations — defense against a pathological model
-    // that keeps emitting tool calls forever. In practice 16 is well above
-    // any real turn; a breach emits a retryable `max_iterations` error.
+    // that keeps emitting tool calls forever. Sized by the agent's effort
+    // (16 at `high`, the pre-effort default); a breach emits a retryable
+    // `max_iterations` error.
     // MAX_ITERATIONS: hard cap on agent loop turns — see protocol_v1.1.md §7
-    const MAX_ITERATIONS = 16
+    const profile = effortProfile(cfg.effort)
+    const MAX_ITERATIONS = profile.maxIterations
     let iterations = 0
 
     // Behavioral guard distinct from MAX_ITERATIONS: if the model keeps
@@ -456,7 +522,7 @@ export class ChatService implements OrchestratorEngine {
     // output caps above defend against). Break early with a friendly message
     // instead of burning all 16 iterations re-trying a tool that cannot
     // succeed. Reset to 0 the moment any step makes progress.
-    const MAX_CONSECUTIVE_TOOL_FAILURES = 3
+    const MAX_CONSECUTIVE_TOOL_FAILURES = profile.maxConsecutiveToolFailures
     let consecutiveFailedSteps = 0
 
     // Duplicate-read spin guard. The MAX_CONSECUTIVE_TOOL_FAILURES guard above
@@ -504,6 +570,7 @@ export class ChatService implements OrchestratorEngine {
           ),
           tools: cfg.llmTools,
           system: cfg.system,
+          providerOptions: cfg.providerOptions,
         })
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err)
@@ -662,6 +729,22 @@ export class ChatService implements OrchestratorEngine {
 
       for (let i = 0; i < toolCalls.length; i++) {
         const tc = toolCalls[i]
+
+        // `load_skill` (catalog-mode skills) is answered in-process: it only
+        // returns instruction text, so there is nothing for mobile to run and
+        // no card to render. Not in TOOL_REGISTRY, so it must be caught before
+        // the unknown-tool-defaults-to-mobile fallback below.
+        if (tc.toolName === LOAD_SKILL_TOOL_NAME) {
+          const result = loadSkillResult(cfg.skills ?? [], tc.input)
+          session.messages.push(
+            toolResultMessage(tc.toolCallId, tc.toolName, result),
+          )
+          await this.persistTurnSoFar(session)
+          if (result.status === 'success') stepProgressed = true
+          else stepFailed = true
+          continue
+        }
+
         const meta = TOOL_REGISTRY[tc.toolName]
         const capability = meta?.capability ?? 'write'
 
@@ -866,12 +949,7 @@ export class ChatService implements OrchestratorEngine {
     config: AgentRuntimeConfig,
     brief?: string,
   ): string {
-    const header = buildWalletContextPrompt(session.wallet_context)
-    const briefNote = brief
-      ? `\n\n## This turn — do ONLY this\n${brief}\n\nThis is the ONLY thing to handle this turn. The user's latest message may bundle other requests that are NOT your job — IGNORE those parts completely. A coordinator routes them to the right specialist separately. Do NOT mention, decline, or suggest workarounds for anything outside this step (e.g. don't say "I can't swap" or point the user to another app) — just do this step and stop.`
-      : ''
-    const cardRule = buildCardBackedToolRule(config.tools)
-    return `${header}\n\n${config.buildSystemPrompt()}${cardRule}${briefNote}`
+    return composeAgentSystem(session.wallet_context, config, brief)
   }
 
   /** Terminal `done` event (conversation meta + usage). */
@@ -950,6 +1028,7 @@ export class ChatService implements OrchestratorEngine {
         ),
         tools: buildSchemaToolSet(coreCfg.tools),
         system,
+        providerOptions: providerOptionsFor(coreCfg.model, coreCfg.effort),
       })
     } catch (err) {
       this.logger.error(`Core streamText failed: ${String(err)}`)
@@ -990,9 +1069,18 @@ export class ChatService implements OrchestratorEngine {
       return { kind: 'answered' }
     }
 
-    const decision = decideCoreRoute(toolCalls, listSpecialistIds())
+    const decision = decideCoreRoute(
+      toolCalls,
+      listSpecialistIds(),
+      lastUserText(coreMessages),
+    )
 
     if (decision.kind === 'route') {
+      if (decision.redirectedFromClarify) {
+        this.logger.log(
+          `core_clarify(missing_detail) redirected to "${decision.steps[0]?.to}"`,
+        )
+      }
       // Core is delegating — stay SILENT. Drop its prose (internal routing
       // rationale) entirely: not streamed, not persisted. The specialist
       // owns the user-facing narration for this step.
@@ -1054,17 +1142,32 @@ export class ChatService implements OrchestratorEngine {
       return
     }
     const mcpTools = await this.getMcpTools()
+    const skills = skillsForAgent(config.id, config.skills)
+    const llmTools = buildAllTools(
+      scopeToolsForModel(config.tools, session.wallet_context?.namespace),
+      mcpTools,
+    )
+    // Catalog-mode skills are fetched on demand; inline skills are already
+    // in the system prompt and need no tool.
+    if (skills.length > 0 && skillMode(skills) === 'catalog') {
+      llmTools[LOAD_SKILL_TOOL_NAME] = defineTool({
+        description: LOAD_SKILL_DESCRIPTION,
+        inputSchema: jsonSchema<Record<string, unknown>>(
+          LOAD_SKILL_INPUT_SCHEMA as unknown as Record<string, unknown>,
+        ),
+      }) as Tool
+    }
     const cfg: AgentTurnConfig = {
       system: this.buildAgentSystem(session, config, brief),
       // Scope to the active wallet namespace + hide capability-superseded
       // per-namespace balance/asset tools, so the specialist sees the
       // chain-agnostic capability tools instead of a sibling namespace's
       // variants. No-op for agents with no chain-bound tools.
-      llmTools: buildAllTools(
-        scopeToolsForModel(config.tools, session.wallet_context?.namespace),
-        mcpTools,
-      ),
+      llmTools,
       model,
+      effort: config.effort,
+      providerOptions: providerOptionsFor(config.model, config.effort),
+      skills,
     }
     yield* this.runAgentTurn(session, cfg, mcpTools)
   }
@@ -1993,7 +2096,7 @@ function readCallKey(toolName: string, input: unknown): string {
  * typed Core⇄specialist channel: Core decides the next step from these status
  * records, NOT by re-reading the specialist's prose from the transcript.
  */
-function formatStepLedger(ledger: readonly StepResult[]): string {
+export function formatStepLedger(ledger: readonly StepResult[]): string {
   if (ledger.length === 0) {
     return '## Steps handled so far this turn\n(none yet)'
   }

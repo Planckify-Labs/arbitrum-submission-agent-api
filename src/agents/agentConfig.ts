@@ -1,6 +1,7 @@
 /**
  * Agent runtime configuration — the per-agent bundle the engine and the
- * orchestrator read: which model, which system prompt, which tools.
+ * orchestrator read: which model, how much effort, which system prompt,
+ * which tools, which skills.
  *
  * Each agent declares its own `config.ts` (co-located with its prompt +
  * tools); this module just aggregates them into a lookup. Adding an agent
@@ -10,6 +11,7 @@
  * type-only, so there is no runtime import cycle.
  */
 
+import type { EffortLevel } from './effort'
 import type { ModelId } from './models'
 import type { AgentId } from './types'
 import type { ToolMeta } from '../tools/internal/types'
@@ -29,6 +31,17 @@ export interface AgentRuntimeConfig {
    * This is the enforcement point for "only this agent can call its tools".
    */
   tools: Record<string, ToolMeta>
+  /**
+   * How hard this agent works per turn (see `effort.ts`): native effort on
+   * models that support it, plus the harness loop budget on every model.
+   */
+  effort: EffortLevel
+  /**
+   * Skill names (folders under `src/skills/`) this agent follows. Each
+   * skill must list this agent and only require tools it owns — enforced
+   * by `skills/skills.spec.ts`.
+   */
+  skills: readonly string[]
 }
 
 export const AGENT_CONFIGS: Record<AgentId, AgentRuntimeConfig> = {

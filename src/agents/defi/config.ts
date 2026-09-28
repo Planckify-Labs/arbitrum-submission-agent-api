@@ -15,4 +15,7 @@ export const defiConfig: AgentRuntimeConfig = {
   model: MODEL_IDS.KIMI_K2, // ← flip to MODEL_IDS.CLAUDE_SONNET to run DeFi on Claude
   buildSystemPrompt: () => DEFI_SYSTEM_PROMPT,
   tools: DEFI_TOOLS,
+  // Multi-step quotes/bridges; high keeps the pre-effort 16-step budget.
+  effort: 'high',
+  skills: [],
 }

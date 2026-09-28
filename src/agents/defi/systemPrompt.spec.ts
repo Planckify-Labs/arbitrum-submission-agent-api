@@ -1,6 +1,24 @@
 import { BRIDGE_TOOLS } from './tools/bridge'
+import { DEFI_TOOLS } from './tools'
 import { DEFI_OPPORTUNITY_TOOLS } from './tools/opportunities'
 import { DEFI_SYSTEM_PROMPT } from './systemPrompt'
+
+/**
+ * Everything the DeFi model reads on every call: its system prompt AND every
+ * tool description and parameter description. A rule lives in ONE of these
+ * places (usually the tool it governs, next to the decision); these guards
+ * assert the rule still reaches the model, not which file holds it. Pinning
+ * rules to the prompt text is what made every fix a copy in two places.
+ */
+const SURFACE = [
+  DEFI_SYSTEM_PROMPT,
+  ...Object.values(DEFI_TOOLS).flatMap((t) => [
+    t.description,
+    ...Object.values(t.inputSchema?.properties ?? {}).map(
+      (p) => (p as { description?: string }).description ?? '',
+    ),
+  ]),
+].join('\n')
 
 /**
  * Regression guard for the swap-hallucination incident, now owned by the
@@ -14,14 +32,16 @@ describe('agents/defi systemPrompt — swap honesty + two-step flow', () => {
   it('describes the two-step preview→execute flow', () => {
     expect(DEFI_SYSTEM_PROMPT).toContain('defi_intent_preview')
     expect(DEFI_SYSTEM_PROMPT).toContain('defi_intent_execute')
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/signs?\s+NOTHING/i)
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/moves?\s+NO funds/i)
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/MUST call .?defi_intent_execute/i)
+    expect(SURFACE).toMatch(/signs?\s+NOTHING/i)
+    expect(SURFACE).toMatch(/moves?\s+NO funds/i)
+    // The execute obligation must be in the prompt itself (cross-tool rule).
+    expect(DEFI_SYSTEM_PROMPT).toMatch(/MUST (call .?defi_intent_execute|execute)/i)
   })
 
   it('forbids claiming success without an execute result', () => {
-    expect(DEFI_SYSTEM_PROMPT).toContain('On-chain execution honesty')
-    for (const word of ['executed', 'broadcast', 'successful']) {
+    expect(DEFI_SYSTEM_PROMPT).toMatch(/execution honesty/i)
+    expect(DEFI_SYSTEM_PROMPT).toMatch(/never say an on-chain action happened|NEVER tell the user an on-chain action happened/i)
+    for (const word of ['swapped', 'done', 'confirmed']) {
       expect(DEFI_SYSTEM_PROMPT.toLowerCase()).toContain(word)
     }
     expect(DEFI_SYSTEM_PROMPT).toMatch(/digest/i)
@@ -29,7 +49,7 @@ describe('agents/defi systemPrompt — swap honesty + two-step flow', () => {
 
   it('includes the shared cross-cutting rules', () => {
     expect(DEFI_SYSTEM_PROMPT).toContain('### Privacy')
-    expect(DEFI_SYSTEM_PROMPT).toContain('### Honesty')
+    expect(DEFI_SYSTEM_PROMPT).toMatch(/### (Errors and honesty|Honesty)/)
   })
 })
 
@@ -50,18 +70,16 @@ describe('agents/defi systemPrompt — swap honesty + two-step flow', () => {
  */
 describe('agents/defi systemPrompt — bridge destination resolution', () => {
   it('forbids asking the user for their own destination address', () => {
-    expect(DEFI_SYSTEM_PROMPT).toMatch(
-      /NEVER ask the user for their own destination address/i,
-    )
+    expect(SURFACE).toMatch(/NEVER ask the user (for their own destination address|to type or paste their own address)/i)
   })
 
   it('tells the model to omit to_address and let the device resolve it', () => {
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/OMIT .?to_address/i)
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/resolves the destination itself/i)
+    expect(SURFACE).toMatch(/OMIT (.?to_address|IT unless the user actually named an address)/i)
+    expect(SURFACE).toMatch(/device resolves (the destination itself|the user's own wallet on the destination chain)/i)
   })
 
   it('names the card as the confirmation step, not a chat question', () => {
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/card.{0,120}change it/is)
+    expect(SURFACE).toMatch(/card.{0,120}(change it|where they confirm)/is)
   })
 
   // The schema is the other surface the model reads; both must agree, or
@@ -95,13 +113,12 @@ describe('agents/defi systemPrompt — bridge destination resolution', () => {
  */
 describe('agents/defi systemPrompt — position-check routing', () => {
   it('tells the model to call defi_list_positions for "what\'s mine" questions', () => {
-    expect(DEFI_SYSTEM_PROMPT).toContain('Checking positions')
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/what's mine/i)
+    expect(SURFACE).toMatch(/ALWAYS call this for "what's mine/i)
     expect(DEFI_SYSTEM_PROMPT).toContain('defi_list_positions')
   })
 
   it('forbids answering a position question from a wallet-balance tool', () => {
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/NEVER answer from a wallet-balance/i)
+    expect(SURFACE).toMatch(/(NEVER|Do NOT try to) answer (from|these from) a wallet-balance/i)
   })
 
   it('keeps the tool description consistent with the prompt', () => {
@@ -128,22 +145,18 @@ describe('agents/defi systemPrompt — position-check routing', () => {
  */
 describe('agents/defi systemPrompt — Quick Invest intent forwarding', () => {
   it('tells the model to forward a stated amount and tier', () => {
-    expect(DEFI_SYSTEM_PROMPT).toMatch(
-      /Pass .?amount_usd.? and .?tier.? WHENEVER the user has stated them/i,
-    )
-    expect(DEFI_SYSTEM_PROMPT).toContain('invest $750, balanced')
+    expect(SURFACE).toMatch(/PASS IT WHENEVER THE USER NAMES A NUMBER|Pass .?amount_usd.? and .?tier.? WHENEVER/i)
+    expect(SURFACE).toMatch(/Pass it whenever the user states or clearly implies a risk appetite|tier.? WHENEVER the user has stated/i)
   })
 
   it('tells the model to infer tier from a goal', () => {
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/emergency fund/i)
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/conservative/i)
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/aggressive/i)
+    expect(SURFACE).toMatch(/emergency fund/i)
+    expect(SURFACE).toMatch(/conservative/i)
+    expect(SURFACE).toMatch(/aggressive/i)
   })
 
   it('forbids inventing an amount the user never said', () => {
-    expect(DEFI_SYSTEM_PROMPT).toMatch(
-      /NEVER invent an .?amount_usd.? the user did not say/i,
-    )
+    expect(SURFACE).toMatch(/NEVER invent an .?amount_usd.? the user did not say|Omit it only when the user named no amount/i)
   })
 
   it('keeps the tool schema consistent with the prompt', () => {
@@ -173,25 +186,23 @@ describe('agents/defi systemPrompt — Quick Invest intent forwarding', () => {
  */
 describe('agents/defi systemPrompt — recurring investing is a reminder', () => {
   it('frames DCA as a reminder the user still signs', () => {
-    expect(DEFI_SYSTEM_PROMPT).toContain('defi_set_recurring_invest')
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/REMINDER/)
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/signs? the deposit themselves/i)
+    expect(SURFACE).toMatch(/REMINDER/)
+    expect(SURFACE).toMatch(/signs? the deposit themselves/i)
   })
 
   it('forbids describing it as automatic', () => {
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/NEVER describe it as "automatic"/i)
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/MOVES NO FUNDS TODAY/)
+    // The wording ban is a reply rule, so it must be in the prompt itself.
+    expect(DEFI_SYSTEM_PROMPT).toMatch(/Never (describe it as|call them) "automatic"/i)
+    expect(SURFACE).toMatch(/MOVES NO FUNDS TODAY/i)
   })
 
   it('forbids inventing an amount or a cadence', () => {
-    expect(DEFI_SYSTEM_PROMPT).toMatch(
-      /Do NOT invent an .?amount_usd.? or a .?cadence.?/,
-    )
+    expect(SURFACE).toMatch(/(Do NOT|never) invent an .?amount.?(_usd.?)? or a .?cadence/i)
   })
 
   it('requires surfacing a saved-strategy tier override', () => {
-    expect(DEFI_SYSTEM_PROMPT).toContain('defi_list_recurring_invest')
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/Never let that override happen silently/i)
+    expect(SURFACE).toMatch(/saved profile wins/i)
+    expect(SURFACE).toMatch(/(Never let that override happen silently|rather than letting it happen silently)/i)
   })
 })
 
@@ -203,8 +214,8 @@ describe('agents/defi systemPrompt — recurring investing is a reminder', () =>
  */
 describe('agents/defi systemPrompt — out-of-tier rows are informational', () => {
   it('forbids proposing a row flagged outside_tier', () => {
-    expect(DEFI_SYSTEM_PROMPT).toContain('outside_tier')
-    expect(DEFI_SYSTEM_PROMPT).toMatch(/NEVER propose one/i)
+    expect(SURFACE).toContain('outside_tier')
+    expect(SURFACE).toMatch(/NEVER propose (one|a deposit into one)/i)
   })
 
   it('says the same in the tool description', () => {

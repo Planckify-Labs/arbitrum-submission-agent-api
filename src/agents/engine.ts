@@ -52,6 +52,12 @@ export interface StepResult {
 export interface CoreRoute {
   kind: 'route'
   steps: CoreStep[]
+  /**
+   * Set when Core tried to ask the user for a missing detail and the route
+   * was substituted for its question (see `decideCoreRoute`). Logged so we
+   * can watch how often the router still reaches for a question.
+   */
+  redirectedFromClarify?: boolean
 }
 
 /** Core answered the user directly (small talk / clarification) — no route. */
@@ -104,6 +110,19 @@ export interface OrchestratorEngine {
   emitDone(session: Session): AgentEvent
 }
 
+/** Cap on the user's words quoted into a redirected brief. */
+const MAX_REDIRECT_QUOTE_CHARS = 300
+
+/**
+ * Brief for a clarify that was turned into a hand-off. Quotes the user's
+ * own words so the specialist sees the full request, not Core's reading
+ * of it.
+ */
+export function redirectBrief(userRequest: string): string {
+  const quote = userRequest.trim().slice(0, MAX_REDIRECT_QUOTE_CHARS)
+  return `Handle the user's request: "${quote}". Resolve any detail that seems missing with your own tools and skills first; ask the user only if they cannot settle it.`
+}
+
 /**
  * Pure routing decision from Core's emitted tool calls. Extracted so it
  * can be unit-tested without a model.
@@ -112,12 +131,21 @@ export interface OrchestratorEngine {
  * delegates one handoff per part of the request, and a compound request emits
  * several in a single response. Taking only the first (the old behavior)
  * silently dropped the remaining steps (e.g. the swap/yield after the wallet
- * read). Invalid targets are skipped. No valid handoff (or only
- * `core_clarify` / no tool call) is treated as "answered".
+ * read). Invalid targets are skipped.
+ *
+ * Clarify gate: Core has NO tools, so it cannot know whether a recipient is
+ * in the address book or which stablecoin the user holds — yet asking for
+ * exactly that ("which token? paste her address?") is its most common
+ * failure. Only a `which_task` clarify is surfaced to the user. Any other
+ * clarify naming a valid `likely_agent` is converted into a hand-off to that
+ * agent with the user's own words, so the agent WITH tools decides what is
+ * really missing. A clarify with no usable agent falls through to
+ * "answered" (the question is asked) — never a silent drop.
  */
 export function decideCoreRoute(
   toolCalls: Array<{ toolName: string; input: unknown }>,
   validSpecialistIds: readonly AgentId[],
+  userRequest = '',
 ): CoreDecision {
   const steps: CoreStep[] = []
   for (const tc of toolCalls) {
@@ -131,5 +159,28 @@ export function decideCoreRoute(
       steps.push({ to, brief })
     }
   }
-  return steps.length > 0 ? { kind: 'route', steps } : { kind: 'answered' }
+  if (steps.length > 0) return { kind: 'route', steps }
+
+  const clarify = toolCalls.find((tc) => tc.toolName === 'core_clarify')
+  if (clarify && userRequest.trim().length > 0) {
+    const input = (
+      clarify.input && typeof clarify.input === 'object' ? clarify.input : {}
+    ) as Record<string, unknown>
+    const likely =
+      typeof input.likely_agent === 'string'
+        ? (input.likely_agent as AgentId)
+        : undefined
+    if (
+      input.kind !== 'which_task' &&
+      likely &&
+      validSpecialistIds.includes(likely)
+    ) {
+      return {
+        kind: 'route',
+        steps: [{ to: likely, brief: redirectBrief(userRequest) }],
+        redirectedFromClarify: true,
+      }
+    }
+  }
+  return { kind: 'answered' }
 }

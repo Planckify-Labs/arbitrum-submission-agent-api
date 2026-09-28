@@ -1,0 +1,66 @@
+{
+  "cases": [
+    {
+      "id": "single-usd-stable-no-question",
+      "user": "send $50 to 0x425e000000000000000000000000000000009fc9",
+      "expect_route": "wallet",
+      "expect_tools_before_text": [
+        "get_wallet_assets"
+      ],
+      "expect_final_tool": "send_token",
+      "expect_final_input": {
+        "symbol": "AUSD",
+        "amount": "50"
+      }
+    },
+    {
+      "id": "two-usd-stables-no-question",
+      "user": "send $50 to 0x425e000000000000000000000000000000009fc9",
+      "fixtures": {
+        "get_wallet_assets": {
+          "status": "success",
+          "data": {
+            "tokens": [
+              {
+                "symbol": "AUSD",
+                "name": "Agora USD",
+                "is_native": false,
+                "is_stable_coin": true,
+                "pegged_currency": "USD",
+                "decimals": 6,
+                "balance_display": "99312.15"
+              },
+              {
+                "symbol": "USDC",
+                "name": "USD Coin",
+                "is_native": false,
+                "is_stable_coin": true,
+                "pegged_currency": "USD",
+                "decimals": 6,
+                "balance_display": "200"
+              }
+            ]
+          }
+        }
+      },
+      "expect_route": "wallet",
+      "expect_tools_before_text": [
+        "get_wallet_assets"
+      ],
+      "expect_final_tool": "send_token",
+      "expect_final_input": {
+        "symbol": "AUSD|USDC",
+        "amount": "50"
+      }
+    },
+    {
+      "id": "no-stable-for-currency",
+      "user": "send Rp100k to 0x425e000000000000000000000000000000009fc9",
+      "expect_route": "wallet",
+      "expect_tools_before_text": [
+        "get_wallet_assets"
+      ],
+      "expect_no_tool": "send_token"
+    }
+  ]
+}

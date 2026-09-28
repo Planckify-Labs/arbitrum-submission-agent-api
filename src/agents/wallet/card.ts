@@ -19,6 +19,58 @@ export const walletCard: AgentCard = {
   display_name: 'Wallet specialist',
   description:
     'Owns balances, transfers, approvals, address book, gas estimation, and points. Use for anything the device must sign or authenticate.',
+  routing: [
+    {
+      handles: 'balances and token holdings ("what do I have", "how much USDC"), wallet address, supported chains',
+      tools: [
+        'get_native_balance',
+        'get_wallet_assets',
+        'get_balance',
+        'get_sui_balance',
+        'get_sol_balance',
+        'get_xlm_balance',
+        'get_wallet_address',
+        'get_supported_chains',
+      ],
+    },
+    { handles: 'NFTs / collectibles', tools: ['get_wallet_nfts'] },
+    {
+      handles: 'sending money or tokens to an address or a saved contact ("send $50 to mom"), the address book',
+      tools: ['send_native', 'send_token', 'search_address_book', 'get_address_book', 'get_address_book_entry'],
+    },
+    { handles: 'looking up a past transaction', tools: ['get_transaction'] },
+    {
+      handles: 'token approvals, contract reads/calls, gas estimates',
+      tools: ['approve_erc20', 'read_contract', 'write_contract', 'estimate_gas'],
+    },
+    {
+      handles: 'points: balance, history, conversion rate, adding points from a stablecoin, signing in to points',
+      tools: [
+        'get_points_balance',
+        'get_points_history',
+        'get_points_price',
+        'deposit_points',
+        'deposit_points_sol',
+        'request_authentication',
+      ],
+    },
+    {
+      handles:
+        'redeeming points for products: game top-ups (e.g. Mobile Legends diamonds), phone credit (pulsa), data packages, vouchers; redemption status and history',
+      tools: [
+        'get_redemption_categories',
+        'get_redemption_catalog',
+        'search_redemption_catalog',
+        'get_product_details',
+        'get_product_input_fields',
+        'execute_redemption',
+        'execute_booking_sol',
+        'get_redemption_status',
+        'get_redemption_history',
+      ],
+    },
+    { handles: 'Stellar trustlines (letting the wallet hold a new asset)', tools: ['establish_stellar_trustline'] },
+  ],
   // Spec §5 lists nine "canonical" prefixes but two of them
   // (`points_`, `address_book_`) match no actual tool name in the
   // registry today — every points / address-book tool starts with

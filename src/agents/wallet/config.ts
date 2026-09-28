@@ -14,4 +14,8 @@ export const walletConfig: AgentRuntimeConfig = {
   model: MODEL_IDS.KIMI_K2,
   buildSystemPrompt: () => WALLET_SYSTEM_PROMPT,
   tools: WALLET_TOOLS,
+  // Redemption flows (balance → catalog → product → fields → price →
+  // execute → status) need the full 16-step budget; don't go below high.
+  effort: 'high',
+  skills: ['pay-a-person', 'fiat-amount'],
 }

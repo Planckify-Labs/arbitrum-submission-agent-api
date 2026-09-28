@@ -21,10 +21,21 @@ const CORE_CLARIFY: ToolMeta = {
   executor: 'server',
   capability: 'read',
   description:
-    'Ask the user a single clarifying question when intent is ambiguous. The orchestrator surfaces the question verbatim in the next assistant message; Core resumes on the user reply.',
+    'Ask the user ONE question — only when you cannot tell WHICH task they want (kind "which_task"). You have no tools to look anything up, so never ask for a detail a specialist could resolve (recipient, token, amount source, chain): hand off instead. If you think a detail is missing, set kind "missing_detail" and likely_agent — the request is then handed to that specialist, which resolves it with its tools and only asks if it truly must.',
   inputSchema: {
     type: 'object',
     properties: {
+      kind: {
+        type: 'string',
+        enum: ['which_task', 'missing_detail'],
+        description:
+          '"which_task": you cannot tell what the user wants done (asked verbatim). "missing_detail": the task is clear but a parameter seems missing (NOT asked — routed to likely_agent).',
+      },
+      likely_agent: {
+        type: 'string',
+        description:
+          'Specialist id that owns the task (e.g. "wallet", "defi"). Required for kind "missing_detail".',
+      },
       question: {
         type: 'string',
         description:
@@ -36,7 +47,7 @@ const CORE_CLARIFY: ToolMeta = {
           'Optional brief internal note explaining why the clarification is needed. Not shown to the user.',
       },
     },
-    required: ['question'],
+    required: ['kind', 'question'],
     additionalProperties: false,
   },
 }

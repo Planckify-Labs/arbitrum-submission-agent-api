@@ -1,0 +1,55 @@
+{
+  "cases": [
+    {
+      "id": "balance-overview",
+      "note": "622edfa: 'what do I own' = get_native_balance + get_wallet_assets, nothing else; 4be4fc3: no re-tabulating the card",
+      "scenario": "base",
+      "user": "what do I have in my wallet?",
+      "expect_routes": ["wallet"],
+      "expect_tools": ["get_wallet_assets"],
+      "expect_max_calls": { "get_wallet_assets": 1 },
+      "expect_short_reply": true
+    },
+    {
+      "id": "token-balance",
+      "scenario": "base",
+      "user": "how much USDC do I have",
+      "expect_routes": ["wallet"],
+      "expect_tools": ["get_wallet_assets"],
+      "expect_short_reply": true
+    },
+    {
+      "id": "send-token-pasted-address",
+      "scenario": "base",
+      "user": "send 10 USDC to 0x2222222222222222222222222222222222222222",
+      "expect_routes": ["wallet"],
+      "expect_final_tool": "send_token",
+      "expect_final_input": { "symbol": "USDC", "amount": "10", "to": "0x2222222222222222222222222222222222222222" }
+    },
+    {
+      "id": "send-native",
+      "scenario": "base",
+      "user": "send 0.01 ETH to 0x2222222222222222222222222222222222222222",
+      "expect_routes": ["wallet"],
+      "expect_final_tool": "send_native",
+      "expect_final_input": { "amount": "0.01" }
+    },
+    {
+      "id": "send-over-balance",
+      "scenario": "base",
+      "user": "send 5000 USDC to 0x2222222222222222222222222222222222222222",
+      "expect_routes": ["wallet"],
+      "expect_tools": ["get_wallet_assets"],
+      "expect_no_tool": ["send_token"]
+    },
+    {
+      "id": "nfts",
+      "note": "8dc0d72",
+      "scenario": "base",
+      "user": "show me my NFTs",
+      "expect_routes": ["wallet"],
+      "expect_tools": ["get_wallet_nfts"],
+      "expect_short_reply": true
+    }
+  ]
+}

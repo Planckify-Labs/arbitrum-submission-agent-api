@@ -16,4 +16,7 @@ export const coreConfig: AgentRuntimeConfig = {
   model: MODEL_IDS.KIMI_K2,
   buildSystemPrompt: buildCoreSystemPrompt,
   tools: CORE_TOOLS,
+  // One routing decision per message — cheap and fast.
+  effort: 'low',
+  skills: [],
 }

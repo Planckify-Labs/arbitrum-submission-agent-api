@@ -64,6 +64,19 @@ The MCP stdio subprocess is retained as a bare diagnostic template per protocol 
 - **Mobile-executed tool** (the default): add an entry to `TOOL_REGISTRY` in `src/tools/registry.ts` with `executor: "mobile"`, the right `category` and `capability`, and a concrete `inputSchema`. Add a `buildHumanSummary()` case in `src/tools/human-summary.ts` (a stub label is fine for `read` tools; `write` and `simulate` need a meaningful sentence). Update `registry.spec.ts` and `human-summary.spec.ts` so the parity tests cover it. The mobile must implement the matching executor and add the tool name to `EXPECTED_MOBILE_TOOLS`.
 - **Server-executed diagnostic tool**: register it inline in `src/mcp/server.ts` (mirroring `owner` / `calculator`). Do NOT add it to `TOOL_REGISTRY` unless the LLM should be able to call it; if you do, set `executor: "server"` and wire a handler in `createToolHandlers()`.
 
+### Agent effort and skills (ported from Claude Code)
+
+Each agent's `src/agents/<id>/config.ts` declares `effort` and `skills` next to its model and tools.
+
+- **Effort** (`src/agents/effort.ts`): `low | medium | high | xhigh | max`. On Claude it is sent as native `effort` (clamped per model in `models.ts`); on every model it sizes the loop budget. `high` = the old 16-step / 3-failure defaults.
+- **Skills** (`src/skills/<name>/SKILL.md` + `cases.json`): step-by-step recipes for a goal, written against tool names. Put new "the agent should do X before asking" fixes here, NOT as another rule in `systemPrompt.ts`. Skills inline into the prompt while they fit `SKILL_INLINE_BUDGET_CHARS`, then switch to a catalog + in-process `load_skill` tool.
+- `skills.spec.ts` fails CI if a skill needs a tool its agent lacks, is orphaned, or ships no cases.
+- **Core never asks for details.** `core_clarify` takes `kind`; only `which_task` reaches the user. `missing_detail` is converted to a hand-off to `likely_agent` in `decideCoreRoute`, because Core has no tools to know what is actually missing.
+- **Routing coverage:** each agent card has `routing` lines (plain-language capability → tools). Core's specialist list is rendered from them, and `routingCoverage.spec.ts` fails if any model-visible tool is uncovered. Adding a tool without a routing line = CI failure (this is how NFTs and game top-ups silently became "I can't do that").
+- **Where a rule lives:** a rule about ONE tool (when to call it, which param to omit, how to read its result) goes in that tool's description, once. The system prompt holds only cross-tool workflow. Prompt specs assert a rule reaches the model (prompt + tool texts), not which file holds it.
+- **Prompt order is load-bearing for cost:** static rules/skills first, per-user wallet header and per-turn brief LAST (`composeAgentSystem`). Kimi caches the byte-identical prefix automatically.
+- **Real-model regression:** `pnpm eval:agents [--runs 3] [--case <id>] [--out f.json] [--compare f.json] [--rpm 30]` runs `evals/cases/*.json` + skill cases through the real Core + specialist prompts with the simulated phone in `evals/fixtures.ts`. It spends Moonshot credit and shares the org's rate limit and budget with the app. Use a separate eval key/project if possible. It aborts on any billing/budget error and never counts rate-limit errors as failures.
+
 ### Key patterns
 
 - **Zero credentials on the server.** The agent server never holds RPC URLs, private keys, JWTs, refresh tokens, or third-party API keys. The only secret it knows is `KIMI_K2_API_KEY` for the model and `CHAT_API_KEY` for the inbound `/chat` route.

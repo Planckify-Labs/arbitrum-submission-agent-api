@@ -29,6 +29,14 @@ export type AgentCard = {
   /** Routing hint for Core's LLM. */
   description: string
   /**
+   * What this agent handles, in the user's words, each line naming the
+   * tools behind it. Core's specialist list is rendered from this, and
+   * `routingCoverage.spec.ts` fails if any model-visible tool is not
+   * covered — so a new tool can never leave Core unaware it exists (the
+   * NFT and game-top-up refusals were exactly that).
+   */
+  routing?: Array<{ handles: string; tools: string[] }>
+  /**
    * Tool name prefixes this agent owns. Entries ending in `_` denote a
    * prefix family (e.g. `defi_`); entries without a trailing `_` denote
    * an exact tool name (e.g. `read_contract`).

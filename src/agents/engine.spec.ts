@@ -1,4 +1,4 @@
-import { decideCoreRoute } from './engine'
+import { decideCoreRoute, redirectBrief } from './engine'
 
 describe('agents/engine decideCoreRoute', () => {
   const specialists = ['defi', 'wallet'] as const
@@ -66,12 +66,87 @@ describe('agents/engine decideCoreRoute', () => {
     expect(decision.kind).toBe('answered')
   })
 
-  it('treats core_clarify as answered', () => {
+  it('treats core_clarify as answered when there is no user request to forward', () => {
     const decision = decideCoreRoute(
       [{ toolName: 'core_clarify', input: { question: 'which token?' } }],
       specialists,
     )
     expect(decision.kind).toBe('answered')
+  })
+
+  // Clarify gate — the "Send $50 to mom" regression. Core has no tools, so a
+  // detail question from it is redirected to the specialist that can look.
+  describe('clarify gate', () => {
+    const user = 'Send $50 to mom'
+
+    it('redirects a missing_detail clarify to likely_agent with the user’s words', () => {
+      const decision = decideCoreRoute(
+        [
+          {
+            toolName: 'core_clarify',
+            input: {
+              kind: 'missing_detail',
+              likely_agent: 'wallet',
+              question: 'Which token, and is your mom in your address book?',
+            },
+          },
+        ],
+        specialists,
+        user,
+      )
+      expect(decision).toEqual({
+        kind: 'route',
+        steps: [{ to: 'wallet', brief: redirectBrief(user) }],
+        redirectedFromClarify: true,
+      })
+      expect(redirectBrief(user)).toContain('"Send $50 to mom"')
+    })
+
+    it('also redirects when the model omits kind but names an agent', () => {
+      const decision = decideCoreRoute(
+        [{ toolName: 'core_clarify', input: { likely_agent: 'wallet', question: 'which token?' } }],
+        specialists,
+        user,
+      )
+      expect(decision.kind).toBe('route')
+    })
+
+    it('asks a which_task question verbatim', () => {
+      const decision = decideCoreRoute(
+        [
+          {
+            toolName: 'core_clarify',
+            input: { kind: 'which_task', likely_agent: 'wallet', question: 'What would you like to do?' },
+          },
+        ],
+        specialists,
+        'do the thing',
+      )
+      expect(decision.kind).toBe('answered')
+    })
+
+    it('asks when likely_agent is missing or unknown — never a silent drop', () => {
+      for (const likely_agent of [undefined, 'ghost']) {
+        const decision = decideCoreRoute(
+          [{ toolName: 'core_clarify', input: { kind: 'missing_detail', likely_agent, question: 'q?' } }],
+          specialists,
+          user,
+        )
+        expect(decision.kind).toBe('answered')
+      }
+    })
+
+    it('a real hand-off wins over a clarify in the same response', () => {
+      const decision = decideCoreRoute(
+        [
+          { toolName: 'core_clarify', input: { kind: 'missing_detail', likely_agent: 'defi', question: 'q?' } },
+          { toolName: 'core_handoff', input: { to: 'wallet', brief: 'send $50 to mom' } },
+        ],
+        specialists,
+        user,
+      )
+      expect(decision).toEqual({ kind: 'route', steps: [{ to: 'wallet', brief: 'send $50 to mom' }] })
+    })
   })
 
   it('treats no tool calls as answered', () => {

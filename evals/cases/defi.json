@@ -1,0 +1,148 @@
+{
+  "cases": [
+    {
+      "id": "swap-absolute",
+      "note": "absolute amount \u2192 straight to defi, no balance pre-check; preview then execute (honesty rule)",
+      "scenario": "sui",
+      "user": "swap 2 SUI to USDC",
+      "expect_routes": [
+        "defi"
+      ],
+      "expect_tool_order": [
+        "defi_intent_preview",
+        "defi_intent_execute"
+      ],
+      "expect_final_input": {
+        "intent_id": "intent-7f3a"
+      }
+    },
+    {
+      "id": "swap-relative",
+      "note": "d721bf7: balance first (wallet), then defi computes half of 16.85",
+      "scenario": "sui",
+      "user": "swap half my SUI to USDC",
+      "expect_routes": [
+        "wallet",
+        "defi"
+      ],
+      "expect_input": {
+        "defi_intent_preview": {
+          "amount.human": "8.42|8.425|8.43"
+        }
+      },
+      "forbid_text": [
+        "dex",
+        "swap service",
+        "i can only"
+      ]
+    },
+    {
+      "id": "yield-open-ended",
+      "note": "ee54d13: one call, no namespace/chain probing; 4be4fc3: no table",
+      "scenario": "base",
+      "user": "where can I earn yield on my USDC?",
+      "expect_routes": [
+        "defi"
+      ],
+      "expect_max_calls": {
+        "defi_list_opportunities": 1
+      },
+      "expect_input": {
+        "defi_list_opportunities": {
+          "namespace": "!absent",
+          "chain_id": "!absent"
+        }
+      },
+      "expect_short_reply": true
+    },
+    {
+      "id": "yield-amount-and-tier",
+      "note": "5182a19: stated amount + inferred tier forwarded to the card",
+      "scenario": "base",
+      "user": "invest $750 somewhere safe",
+      "expect_routes": [
+        "defi"
+      ],
+      "expect_input": {
+        "defi_list_opportunities": {
+          "amount_usd": "750",
+          "tier": "conservative"
+        }
+      }
+    },
+    {
+      "id": "positions-route-to-defi",
+      "note": "a4ddc4a: 'what's mine on Compound' is defi, never a wallet balance read",
+      "scenario": "base",
+      "user": "what's mine on Compound?",
+      "expect_routes": [
+        "defi"
+      ],
+      "expect_tools": [
+        "defi_list_positions"
+      ],
+      "expect_no_tool": [
+        "get_wallet_assets"
+      ],
+      "expect_short_reply": true
+    },
+    {
+      "id": "withdraw-evm-position",
+      "note": "bfbc22c: display hints copied off the position row",
+      "scenario": "base",
+      "user": "withdraw everything from my Compound position",
+      "expect_routes": [
+        "defi"
+      ],
+      "expect_tool_order": [
+        "defi_list_positions",
+        "defi_withdraw"
+      ],
+      "expect_final_input": {
+        "position_id": "pos-comet-1",
+        "protocol_slug": "compound-v3"
+      }
+    },
+    {
+      "id": "sui-supply-best-pool",
+      "note": "4fba034: venue + pool_id from the opportunity row, never hardcoded",
+      "scenario": "sui",
+      "user": "put 10 USDC into the best yield pool",
+      "expect_routes": [
+        "defi"
+      ],
+      "expect_tool_order": [
+        "defi_list_opportunities",
+        "defi_intent_preview"
+      ],
+      "expect_input": {
+        "defi_intent_preview": {
+          "action": "supply",
+          "venue": "scallop",
+          "poolId": "0xscallop-usdc-pool"
+        }
+      }
+    },
+    {
+      "id": "dca-reminder-language",
+      "note": "5182a19: DCA is a reminder, never 'automatic'; never a one-off deposit",
+      "scenario": "base",
+      "user": "invest $50 every week into something balanced",
+      "expect_routes": [
+        "defi"
+      ],
+      "expect_no_tool": [
+        "defi_deposit"
+      ],
+      "expect_final_tool": "defi_set_recurring_invest",
+      "expect_final_input": {
+        "amount_usd": "50",
+        "cadence": "weekly"
+      },
+      "forbid_text": [
+        "automatic",
+        "hands-free"
+      ]
+    }
+  ]
+}

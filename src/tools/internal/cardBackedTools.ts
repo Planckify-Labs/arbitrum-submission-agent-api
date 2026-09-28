@@ -80,6 +80,7 @@ export const CARD_BACKED_TOOL_NAMES: ReadonlySet<string> = new Set([
   'bridge_quote',
   'bridge_execute',
   'bridge_status',
+  'bridge_claim',
   // Paid-resource fetch
   'x402_fetch',
 ]);

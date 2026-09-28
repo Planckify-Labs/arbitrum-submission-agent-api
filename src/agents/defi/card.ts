@@ -22,6 +22,30 @@ export const defiCard: AgentCard = {
     'Owns yield strategies, opportunity discovery, rebalances, position reads, ' +
     'and BRIDGING assets across chains (quote, execute, status) — including ' +
     'when the request names a destination wallet or address.',
+  routing: [
+    {
+      handles: 'earning yield: where to invest, deposits, recurring (DCA) investing plans',
+      tools: [
+        'defi_list_opportunities',
+        'defi_get_config',
+        'defi_simulate_deposit',
+        'defi_deposit',
+        'defi_cross_chain_deposit',
+        'defi_set_recurring_invest',
+        'defi_list_recurring_invest',
+      ],
+    },
+    {
+      handles:
+        'existing DeFi positions ("what\'s mine on Compound", earnings), withdrawing, rebalancing, claiming or compounding rewards',
+      tools: ['defi_list_positions', 'defi_withdraw', 'defi_rebalance', 'defi_claim', 'defi_compound'],
+    },
+    { handles: 'swapping one token for another', tools: ['defi_intent_preview', 'defi_intent_execute'] },
+    {
+      handles: 'bridging / moving assets between chains (quote, execute, status, receiving on the destination)',
+      tools: ['bridge_get_support', 'bridge_quote', 'bridge_execute', 'bridge_status', 'bridge_claim'],
+    },
+  ],
   tool_prefixes: ['defi_', 'bridge_'],
   capabilities: [
     'yield_discovery',

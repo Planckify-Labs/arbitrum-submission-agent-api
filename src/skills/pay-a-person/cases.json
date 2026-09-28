@@ -1,0 +1,70 @@
+{
+  "cases": [
+    {
+      "id": "fiat-to-relationship-contact",
+      "note": "The 2026-09-23 regression: Core asked 'which token? is mom saved?' instead of routing.",
+      "user": "Send $50 to mom",
+      "expect_route": "wallet",
+      "expect_tools_before_text": [
+        "search_address_book|get_address_book",
+        "get_wallet_assets"
+      ],
+      "expect_final_tool": "send_token",
+      "expect_final_input": {
+        "symbol": "AUSD",
+        "amount": "50",
+        "to": "0x425e000000000000000000000000000000009fc9"
+      }
+    },
+    {
+      "id": "label-in-other-language",
+      "user": "kirim $20 ke ibu",
+      "expect_route": "wallet",
+      "expect_tools_before_text": [
+        "get_address_book"
+      ],
+      "expect_final_tool": "send_token",
+      "expect_final_input": {
+        "symbol": "AUSD",
+        "amount": "20"
+      }
+    },
+    {
+      "id": "typo-symbol",
+      "user": "sand 5 AUSD to mom",
+      "expect_route": "wallet",
+      "expect_tools_before_text": [
+        "search_address_book|get_address_book"
+      ],
+      "expect_final_tool": "send_token",
+      "expect_final_input": {
+        "symbol": "AUSD",
+        "amount": "5"
+      }
+    },
+    {
+      "id": "unknown-person-asks-for-address",
+      "user": "send $10 to Rizky",
+      "fixtures": {
+        "search_address_book": {
+          "status": "success",
+          "data": {
+            "contacts": []
+          }
+        },
+        "get_address_book": {
+          "status": "success",
+          "data": {
+            "contacts": []
+          }
+        }
+      },
+      "expect_route": "wallet",
+      "expect_tools_before_text": [
+        "search_address_book"
+      ],
+      "expect_no_tool": "send_token",
+      "expect_question": true
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "cases": [
+    {
+      "id": "points-balance",
+      "scenario": "base",
+      "user": "how many points do I have?",
+      "expect_routes": ["wallet"],
+      "expect_tools": ["get_points_balance"],
+      "expect_short_reply": true
+    },
+    {
+      "id": "points-signed-out-requests-login-first",
+      "note": "header rule: points_authenticated=false → request_authentication before any auth-required tool",
+      "scenario": "base",
+      "wallet": { "points_authenticated": false },
+      "user": "how many points do I have?",
+      "expect_routes": ["wallet"],
+      "expect_first_tool": "request_authentication"
+    },
+    {
+      "id": "points-auth-failed-midcall",
+      "note": "wallet rule: authentication_required result → one sentence, no request_authentication, no retry",
+      "scenario": "base",
+      "user": "how many points do I have?",
+      "fixtures": { "get_points_balance": { "status": "failed", "error": "authentication_required" } },
+      "expect_routes": ["wallet"],
+      "expect_no_tool": ["request_authentication"],
+      "expect_max_calls": { "get_points_balance": 1 },
+      "expect_short_reply": true
+    },
+    {
+      "id": "add-points-named-token",
+      "scenario": "base",
+      "user": "add 100 USDC to my points",
+      "expect_routes": ["wallet"],
+      "expect_tool_order": ["get_points_price", "deposit_points"],
+      "expect_final_tool": "deposit_points",
+      "expect_final_input": { "token_symbol": "USDC", "token_amount": "100" },
+      "forbid_text": ["exchange rate"]
+    },
+    {
+      "id": "add-points-fiat",
+      "note": "fiat → the stablecoin pegged to it; IDRX must not be picked for $",
+      "scenario": "base",
+      "user": "add $20 to my points",
+      "expect_routes": ["wallet"],
+      "expect_final_tool": "deposit_points",
+      "expect_final_input": { "token_symbol": "USDC", "token_amount": "20" }
+    },
+    {
+      "id": "redeem-search",
+      "note": "503e403/e2da4b1: precise catalog search, card not re-listed",
+      "scenario": "base",
+      "user": "I want Mobile Legends diamonds",
+      "expect_routes": ["wallet"],
+      "expect_tools": ["search_redemption_catalog|get_redemption_catalog"],
+      "expect_short_reply": true
+    },
+    {
+      "id": "redeem-execute",
+      "scenario": "base",
+      "user": "redeem 86 Mobile Legends diamonds for me. user id 12345678, zone 2345",
+      "expect_routes": ["wallet"],
+      "expect_tool_order": ["get_points_balance", "execute_redemption"],
+      "expect_final_tool": "execute_redemption",
+      "expect_final_input": { "product_variant_id": "v-86", "product_price_id": "pr-86" }
+    }
+  ]
+}

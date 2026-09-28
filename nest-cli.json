@@ -9,6 +9,11 @@
         "include": "agents/manifests/**/*.json",
         "outDir": "dist/src",
         "watchAssets": true
+      },
+      {
+        "include": "skills/**/SKILL.md",
+        "outDir": "dist/src",
+        "watchAssets": true
       }
     ]
   }

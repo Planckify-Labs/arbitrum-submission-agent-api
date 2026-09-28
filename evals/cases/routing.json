@@ -1,0 +1,27 @@
+{
+  "cases": [
+    {
+      "id": "compound-request",
+      "note": "b5cbc5e: one hand-off per domain, both run",
+      "scenario": "sui",
+      "user": "show my points balance, then swap 1 SUI to USDC",
+      "expect_routes_unordered": ["wallet", "defi"],
+      "expect_tools": ["get_points_balance", "defi_intent_preview"]
+    },
+    {
+      "id": "small-talk-no-handoff",
+      "scenario": "base",
+      "user": "hi! what can you do?",
+      "expect_routes": [],
+      "forbid_text": ["specialist", "coordinator"]
+    },
+    {
+      "id": "no-machinery-or-competitors",
+      "note": "d721bf7/570d4f6: one voice, never recommend another app",
+      "scenario": "base",
+      "user": "move my USDC to Arbitrum",
+      "expect_routes": ["defi"],
+      "forbid_text": ["specialist", "coordinator", "jumper", "mayan", "debank", "zapper", "let me check", "just a moment"]
+    }
+  ]
+}

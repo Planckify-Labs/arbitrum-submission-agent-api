@@ -5,7 +5,10 @@
  *
  * Before these existed, a user who just wanted to move USDC from Base to
  * Arbitrum had NO PATH AT ALL: `defi_cross_chain_deposit` is welded to a
- * DeFi deposit (§4.5). These four tools are the standalone surface.
+ * DeFi deposit (§4.5). These tools are the standalone surface, plus
+ * `bridge_claim` for the one route whose destination leg the user's own
+ * wallet has to sign (USDC into Stellar, which has no Circle Forwarding
+ * Service).
  *
  * ## Identifiers are CAIP-2 / CAIP-19
  *
@@ -127,8 +130,9 @@ const BRIDGE_EXECUTE: ToolMeta = {
     'bridge_quote and re-prices it at signing time, so a quote the user read minutes ' +
     'ago is never submitted stale. Pass min_receive_raw from the quote the user actually ' +
     'saw so the transfer is refused if the guaranteed amount has dropped below it. ' +
-    'A bridge is not finished when this returns: poll bridge_status. For a same-chain ' +
-    'Arc swap, pass the same Arc chain as from_chain and to_chain, exactly as quoted.',
+    'The mobile app progress card tracks transfer status in real time; do NOT poll ' +
+    'bridge_status in an agent loop. For a same-chain Arc swap, pass the same Arc ' +
+    'chain as from_chain and to_chain, exactly as quoted.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -187,7 +191,8 @@ const BRIDGE_STATUS: ToolMeta = {
     'Neither is a success and neither is an error: name the token actually received, or ' +
     'the chain the refund landed on. Waiting for confirmation can take 15 to 20 minutes ' +
     'on a standard transfer, which is normal and not a fault. A same-chain Arc swap ' +
-    'settles within seconds.',
+    'settles within seconds. If the result says claim_required is true, the funds are ' +
+    'waiting for the user to receive them on the destination: offer bridge_claim.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -209,9 +214,42 @@ const BRIDGE_STATUS: ToolMeta = {
   },
 }
 
+const BRIDGE_CLAIM: ToolMeta = {
+  name: 'bridge_claim',
+  category: 'utility',
+  executor: 'mobile',
+  capability: 'write',
+  description:
+    'Receive the funds of a bridge that is waiting on the destination wallet. Call it ' +
+    'ONLY when bridge_status returned claim_required: true for that transfer (today: ' +
+    'USDC arriving on Stellar, which Circle does not deliver automatically). The ' +
+    "user's own destination wallet signs one small network transaction that mints the " +
+    'funds to the recipient the original transfer already named; it cannot redirect ' +
+    'them. Pass the same from_chain, to_chain, source_tx_hash and provider you gave ' +
+    'bridge_status. Never call it speculatively.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      from_chain: CAIP2_PROP(`Source chain of the original transfer. ${CAIP_GUIDANCE}`),
+      to_chain: CAIP2_PROP(`Destination chain of the original transfer. ${CAIP_GUIDANCE}`),
+      source_tx_hash: {
+        type: 'string',
+        description: 'The source-chain transaction hash returned by bridge_execute.',
+      },
+      provider: {
+        type: 'string',
+        description: 'Optional provider key from the quote (for example "cctp").',
+      },
+    },
+    required: ['from_chain', 'to_chain', 'source_tx_hash'],
+    additionalProperties: false,
+  },
+}
+
 export const BRIDGE_TOOLS: Record<string, ToolMeta> = composeAgentTools('defi', {
   bridge_get_support: BRIDGE_GET_SUPPORT,
   bridge_quote: BRIDGE_QUOTE,
   bridge_execute: BRIDGE_EXECUTE,
   bridge_status: BRIDGE_STATUS,
+  bridge_claim: BRIDGE_CLAIM,
 })

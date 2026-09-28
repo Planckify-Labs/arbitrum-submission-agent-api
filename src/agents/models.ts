@@ -2,8 +2,9 @@
  * Model registry — the single place that maps a stable model id to a
  * concrete `ai` SDK `LanguageModel`.
  *
- * Design goal: adding a new model is a TWO-LINE change (a `MODEL_IDS`
- * row + a `REGISTRY` factory) and nothing else in the codebase moves.
+ * Design goal: adding a new model is a `MODEL_IDS` row + a `REGISTRY`
+ * factory + its `EFFORT_SUPPORT` / `PROVIDER_OF` rows (the `Record<ModelId>`
+ * types make a missing row a compile error), and nothing else moves.
  * Agents reference a `ModelId` constant in their `config.ts`; they never
  * touch a provider directly. Model choice is server-side only.
  *
@@ -16,6 +17,7 @@ import { createAnthropic } from '@ai-sdk/anthropic'
 import { createOpenAI } from '@ai-sdk/openai'
 import { Logger } from '@nestjs/common'
 import type { LanguageModel } from 'ai'
+import { clampEffort, type EffortLevel } from './effort'
 
 const logger = new Logger('AgentModels')
 
@@ -23,7 +25,8 @@ const logger = new Logger('AgentModels')
  * Stable ids agents pick from. The string value is opaque — keep it short
  * and human-readable; the real provider model name lives in the factory.
  *
- * To add a model: add a row here AND a matching factory in `REGISTRY`.
+ * To add a model: add a row here AND matching `REGISTRY`, `EFFORT_SUPPORT`
+ * and `PROVIDER_OF` rows.
  */
 export const MODEL_IDS = {
   KIMI_K2: 'kimi-k2',
@@ -127,6 +130,42 @@ function anthropicProvider() {
 const REGISTRY: Record<ModelId, () => LanguageModel> = {
   [MODEL_IDS.KIMI_K2]: () => moonshotProvider().chat('kimi-k2.6'),
   [MODEL_IDS.CLAUDE_SONNET]: () => anthropicProvider()('claude-sonnet-4-6'),
+}
+
+/** `streamText` providerOptions carrying a native effort level. */
+export type EffortProviderOptions = Record<string, Record<string, string>>
+
+/**
+ * Native effort levels each model accepts. Empty = no native control; the
+ * harness half of effort (`EFFORT_PROFILES`) still applies. A new model row
+ * adds its entry here — nothing else changes.
+ */
+const EFFORT_SUPPORT: Record<ModelId, readonly EffortLevel[]> = {
+  [MODEL_IDS.KIMI_K2]: [],
+  // claude-sonnet-4-6: `xhigh` arrived with Opus 4.7, so it tops out at max
+  // with no xhigh — clampEffort maps an xhigh request down to high.
+  [MODEL_IDS.CLAUDE_SONNET]: ['low', 'medium', 'high', 'max'],
+}
+
+/** Provider for each model id — selects the `providerOptions` namespace. */
+const PROVIDER_OF: Record<ModelId, 'moonshot' | 'anthropic'> = {
+  [MODEL_IDS.KIMI_K2]: 'moonshot',
+  [MODEL_IDS.CLAUDE_SONNET]: 'anthropic',
+}
+
+/**
+ * The model half of per-agent effort: the `providerOptions` to pass to
+ * `streamText`, or undefined when the model has no native effort knob.
+ */
+export function providerOptionsFor(
+  id: ModelId,
+  effort: EffortLevel | undefined,
+): EffortProviderOptions | undefined {
+  if (!effort) return undefined
+  const level = clampEffort(effort, EFFORT_SUPPORT[id] ?? [])
+  if (!level) return undefined
+  if (PROVIDER_OF[id] === 'anthropic') return { anthropic: { effort: level } }
+  return undefined
 }
 
 const cache = new Map<ModelId, LanguageModel>()

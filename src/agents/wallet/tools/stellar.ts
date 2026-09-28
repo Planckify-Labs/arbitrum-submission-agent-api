@@ -198,7 +198,8 @@ export const WALLET_STELLAR_TOOLS: Record<string, ToolMeta> = composeAgentTools(
       'hold an issued asset they do not yet trust — Stellar requires a ' +
       'trustline before an account can hold any non-native asset. This has no ' +
       'cross-chain analogue (EVM/Solana/Sui have no opt-in step). Obtain ' +
-      '`code` and `issuer` from get_wallet_stellar_assets. If the wallet ' +
+      '`code` and `issuer` by splitting the `address` (`CODE:ISSUER`) of the ' +
+      'matching get_wallet_assets row. If the wallet ' +
       'already trusts the asset the tool is a no-op and reports ' +
       'already_trusted: true. The user confirms on the mobile approval sheet.',
     inputSchema: {

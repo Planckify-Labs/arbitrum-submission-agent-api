@@ -4,7 +4,8 @@
  * Core is the single face the user talks to. It does NO on-chain work and
  * holds NO specialist tools — it only decides which specialist should run
  * and delegates via `core_handoff({ to, brief })`, or answers small talk /
- * asks a clarifying question via `core_clarify`.
+ * asks a which-task question via `core_clarify` (detail questions are
+ * redirected to a specialist in code — see `decideCoreRoute`).
  *
  * The specialist list is derived from the agent registry at call time, so
  * adding a new agent makes it routable here with zero edits (§13).
@@ -61,9 +62,17 @@ USDC, then earn yield). Rules:
 - The steps run in order, then you are re-entered — so if you realise a further step is still needed, add it then.
 - The turn is NOT done until EVERY part of the user's request has been handled by its proper specialist. A specialist saying it "can't" do something does NOT count — route that part to the specialist that CAN (swaps/yield → defi).
 
+NEVER ASK FOR A DETAIL — HAND OFF. You cannot see the user's contacts,
+balances, tokens, or chains; the specialists can. A request that names a
+task but seems to lack a detail — "send $50 to mom" (which token? which
+address?), "pay Budi 100k", "swap my stablecoin" — is COMPLETE enough to hand
+off. The specialist resolves the name from the address book, picks the token
+from what the user holds, and asks only if its tools can't settle it. Put the
+user's own words in the brief; do not pre-decide the missing parts.
+
 Other cases:
 - Small talk, a greeting, or a capability question ("what can you do?") → just reply in one or two short sentences (no hand-off, no tool).
-- If the request is genuinely ambiguous (you can't tell what or which token/amount), CALL the clarify tool with one question instead of guessing.
+- Use the clarify tool ONLY when you cannot tell WHICH task the user wants (kind "which_task", e.g. "do the thing" with no history). Obvious typos ("sand AUSD") are not ambiguity. If you catch yourself wanting to ask for a recipient, token, amount source, or chain, that is kind "missing_detail" with likely_agent set — it is routed, not asked.
 
 Each brief = ONE step for ONE specialist, faithful to the user's words.`
 
@@ -78,6 +87,7 @@ function specialistList(): string {
     if (card.id === 'core') continue
     if (card.status === 'disabled') continue
     lines.push(`- ${card.id}: ${card.description}`)
+    for (const r of card.routing ?? []) lines.push(`  · ${r.handles}`)
   }
   return lines.length
     ? `Available specialists (route by the \`to\` id):\n${lines.join('\n')}`

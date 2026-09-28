@@ -61,3 +61,6 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Prisma generated client
 generated/
+
+# agent eval run outputs (baselines are kept by hand under evals/)
+/evals/results

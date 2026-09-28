@@ -173,6 +173,105 @@ describe('multi-agent orchestration (ChatService)', () => {
     ).toBe('read')
   })
 
+  // The 2026-09-23 regression, end to end: Core wanted to ask "which token?
+  // is mom saved?" — the gate hands the request to Wallet instead, whose
+  // system prompt carries its skills and which looks the contact up.
+  it('Core clarify(missing_detail) is redirected to Wallet, which searches the address book', async () => {
+    const systems: string[] = []
+    const runner = makeScriptedRunner([
+      {
+        toolCalls: [
+          {
+            toolCallId: 'tc-clarify',
+            toolName: 'core_clarify',
+            input: {
+              kind: 'missing_detail',
+              likely_agent: 'wallet',
+              question: 'Which token, and is your mom saved?',
+            },
+          },
+        ],
+      },
+      {
+        toolCalls: [
+          {
+            toolCallId: 'tc-search',
+            toolName: 'search_address_book',
+            input: { query: 'mom' },
+          },
+        ],
+      },
+    ])
+    chatService.setModelRunner((params) => {
+      systems.push(params.system)
+      return runner(params)
+    })
+
+    const session = seedSession('Send $50 to mom')
+    const events = await collectUntil(
+      chatService.orchestratedLoop(session),
+      (e) => e.event === 'tool_pending',
+    )
+
+    // Core's question never reached the user.
+    const text = events
+      .filter((e) => e.event === 'text_delta')
+      .map((e) => (e.data as { content: string }).content)
+      .join('')
+    expect(text).not.toContain('Which token')
+    const pending = events.find((e) => e.event === 'tool_pending')
+    expect((pending as { data: { name: string } }).data.name).toBe(
+      'search_address_book',
+    )
+    // Wallet ran with the user's words and its skills inlined.
+    expect(systems[1]).toContain('"Send $50 to mom"')
+    expect(systems[1]).toContain('### Skill: pay-a-person')
+    expect(systems[1]).toContain('### Skill: fiat-amount')
+  })
+
+  it('load_skill is answered in-process — no tool_pending, instructions fed back', async () => {
+    chatService.setModelRunner(
+      makeScriptedRunner([
+        {
+          toolCalls: [
+            {
+              toolCallId: 'tc-load',
+              toolName: 'load_skill',
+              input: { name: 'test-skill' },
+            },
+          ],
+        },
+        { text: 'Done.' },
+      ]),
+    )
+    const session = seedSession('hello')
+    const events: AgentEvent[] = []
+    for await (const e of chatService.runAgentTurn(
+      session,
+      {
+        system: 'test',
+        llmTools: {},
+        model: {} as LanguageModel,
+        skills: [
+          {
+            name: 'test-skill',
+            description: 'd',
+            agents: ['wallet'],
+            requiresTools: [],
+            body: 'Step one.',
+          },
+        ],
+      },
+      {},
+    )) {
+      events.push(e)
+    }
+    expect(events.some((e) => e.event === 'tool_pending')).toBe(false)
+    expect(events.at(-1)?.event).toBe('done')
+    const toolMsg = session.messages.find((m) => m.role === 'tool')
+    expect(JSON.stringify(toolMsg)).toContain('Step one.')
+  })
+
   it('Core answers small talk directly — no specialist, just text + done', async () => {
     chatService.setModelRunner(
       makeScriptedRunner([

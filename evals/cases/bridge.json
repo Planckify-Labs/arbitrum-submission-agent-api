@@ -1,0 +1,71 @@
+{
+  "cases": [
+    {
+      "id": "bridge-no-address-question",
+      "note": "570d4f6: omit to_address, never ask the user for their own address",
+      "scenario": "base",
+      "user": "bridge 100 USDC from Base to Solana",
+      "expect_routes": [
+        "defi"
+      ],
+      "expect_tools": [
+        "bridge_quote"
+      ],
+      "expect_input": {
+        "bridge_quote": {
+          "to_address": "!absent"
+        }
+      },
+      "forbid_text": [
+        "your solana address",
+        "paste"
+      ]
+    },
+    {
+      "id": "bridge-followup-with-wallet-words",
+      "note": "570d4f6: a named destination wallet/address is a bridge parameter, still defi",
+      "scenario": "base",
+      "history": [
+        {
+          "role": "user",
+          "content": "bridge 100 USDC from Base to Solana"
+        },
+        {
+          "role": "assistant",
+          "content": "Here's your quote."
+        }
+      ],
+      "user": "Get me a fresh bridge quote using my Solana wallet \"Solana Wallet\" at 9YTiQxkDgm8BMWzWQzEXS1oNkB5v1H6nZ2pmPh3fELij as the destination",
+      "expect_routes": [
+        "defi"
+      ],
+      "expect_tools": [
+        "bridge_quote"
+      ],
+      "forbid_text": [
+        "jumper",
+        "mayan",
+        "portal bridge"
+      ]
+    },
+    {
+      "id": "bridge-to-unowned-namespace",
+      "note": "6ea3da8: private-key import owns only eip155. The device refuses the quote (invalid_input / no_wallet_on_destination_chain); the agent must not execute or retry the same destination.",
+      "scenario": "base_pk",
+      "user": "bridge 50 USDC to Solana",
+      "expect_no_tool": [
+        "bridge_execute"
+      ],
+      "fixtures": {
+        "bridge_quote": {
+          "status": "failed",
+          "error": "invalid_input",
+          "reason": "no_wallet_on_destination_chain"
+        }
+      },
+      "expect_max_calls": {
+        "bridge_quote": 1
+      }
+    }
+  ]
+}
