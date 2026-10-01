@@ -297,6 +297,23 @@ export function buildHumanSummary(
       return `Claim rewards on position ${position} and redeposit`
     }
 
+    // ─── swap (swap-capability-spec §7) ──────────────────────────────────────
+    case 'swap_execute': {
+      const amount = str(input, 'amount_raw')
+      const chain = str(input, 'chain')
+      return `Swap ${amount} on ${chain}`
+    }
+    case 'swap_quote': {
+      const chain = str(input, 'chain')
+      return `Quote a token swap on ${chain}`
+    }
+    case 'swap_status':
+      return 'Check the status of a token swap'
+    case 'swap_find_token': {
+      const query = str(input, 'query')
+      return `Look up ${query}`
+    }
+
     // ─── bridge (bridge-capability-spec §8.1, §8.3) ─────────────────────────
     // Fallback copy only. The approval surface renders FACTS from the tool
     // args via the mobile `approvalSummary.ts` / `BridgeQuoteCard`; this

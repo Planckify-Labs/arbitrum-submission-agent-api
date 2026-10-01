@@ -25,6 +25,7 @@ import { DEFI_PROPOSE_TOOLS } from './propose'
 import { DEFI_CONFIG_TOOLS } from './reads-extra'
 import { DEFI_RECURRING_TOOLS } from './recurring'
 import { DEFI_SIMULATE_TOOLS } from './simulate'
+import { SWAP_TOOLS } from './swap'
 
 export { DEFI_OPPORTUNITY_TOOLS } from './opportunities'
 export { DEFI_PROPOSE_TOOLS } from './propose'
@@ -34,6 +35,7 @@ export { DEFI_CLAIM_TOOLS } from './claim'
 export { DEFI_INTENT_TOOLS } from './intent'
 export { DEFI_RECURRING_TOOLS } from './recurring'
 export { BRIDGE_TOOLS } from './bridge'
+export { SWAP_TOOLS } from './swap'
 
 export const DEFI_TOOLS: Record<string, ToolMeta> = {
   ...DEFI_OPPORTUNITY_TOOLS,
@@ -48,4 +50,6 @@ export const DEFI_TOOLS: Record<string, ToolMeta> = {
   // General-purpose bridge (bridge-capability-spec §8.3). Owned by the
   // DeFi agent; the `bridge_` prefix is declared on it in the manifest.
   ...BRIDGE_TOOLS,
+  // Standalone same-chain swap (swap-capability-spec §7).
+  ...SWAP_TOOLS,
 }

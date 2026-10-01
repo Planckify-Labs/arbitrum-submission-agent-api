@@ -45,8 +45,8 @@ const DEFI_INTENT_PREVIEW: ToolMeta = {
     'require the user to name it and do NOT hardcode any one protocol. Use ' +
     'action "swap_and_supply" for a one-step "swap X to Y then earn yield on ' +
     'Y" goal — it compiles the swap and the supply into ONE atomic PTB ' +
-    '(mainnet-only, like supply). Sui ONLY: a swap on Arc goes through ' +
-    'bridge_quote with the same Arc chain as from_chain and to_chain.',
+    '(mainnet-only, like supply). Sui ONLY: a swap on any other chain (EVM, ' +
+    'including Arc, or Solana) goes through swap_quote.',
   inputSchema: {
     type: 'object',
     properties: {

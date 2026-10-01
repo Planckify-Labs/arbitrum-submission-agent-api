@@ -36,6 +36,8 @@ export const CARD_BACKED_TOOL_NAMES: ReadonlySet<string> = new Set([
   'approve_spending',
   'approveSpending',
   'swap_quote',
+  'swap_execute',
+  'swap_status',
   // Balance reads → BalancesCard
   // Chain-agnostic capability tools (the model-facing surface).
   'get_native_balance',
