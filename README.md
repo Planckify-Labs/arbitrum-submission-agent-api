@@ -22,8 +22,5 @@ pnpm dev
 ## Authentication
 Requests carry the shared API key in `x-api-key` or `Authorization: Bearer <key>`. Requests without it get `401`.
 
-## History note
-The commit history of this repository was rewritten to remove a previously committed production environment file, so hashes differ from the private development repository.
-
 ---
 
